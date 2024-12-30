@@ -4,7 +4,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 import settings
 
 engine = create_engine(settings.URI_DataBase)
-db_session = scoped_session(sessionmaker(bind = engine))
+db_session = scoped_session(sessionmaker(bind=engine))
 
 Base = declarative_base()
 Base.query = db_session.query_property()
