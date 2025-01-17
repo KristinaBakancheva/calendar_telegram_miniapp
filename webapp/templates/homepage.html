@@ -11,7 +11,8 @@
 
         <!-- for icons -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
+        
+        
         <title>{{page_title}}</title>
         <style>
             .card-container{
@@ -51,20 +52,39 @@
         </style>
     </head>
     <body>
-        
+
+        {% if successful_creation %}
+        <div class="alert alert-success" role="alert">
+            Your profile was successfully created.<br>
+            You can change data or choose your <br>
+            avalible times in your profile 
+        </div>
+        {% endif %}
+
+        {% if mistake_creation %}
+        <div class="alert alert-danger" role="alert">
+            We can't create your profile <br>
+            like mentor. You can try again <br>
+            or write our admin a request.
+        </div>
+        {% endif %}
+
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <ul class="nav nav-pills nav-fill" style="padding-left: 30px;">
-                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{page_title}}</a>
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ page_title }}</a>
             </ul>
+            {% if mentor_role_id in role_id %}
+                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+            {% endif %}
         </nav>
         
         <div class="container card-container">
             <a href="{{ url_for('my_profile') }}" class="link-dark link-underline-opacity-0 profile-link
-                                                        {% if role|lower != 'mentor' %} d-none {% endif %}">
+                                                        {% if mentor_role_id not in role_id %} d-none {% endif %}">
                 <img src="../static/images/my_profile.jpg" class="rounded profile-img"> 
                 My profile
             </a>
-            <a href="#" class="link-dark link-underline-opacity-0 profile-link">
+            <a href="{{ url_for('my_calendar') }}" class="link-dark link-underline-opacity-0 profile-link">
                 <img src="../static/images/calendar.jpg" class="rounded profile-img"> 
                 My calendar
             </a>
@@ -72,13 +92,10 @@
                 <img src="../static/images/you_got_this.jpg" class="rounded profile-img"> 
                 Mentors
             </a>
-            <a href="#" class="link-dark link-underline-opacity-0 profile-link {% if role|lower != 'admin' %} d-none {% endif %}">
+            <a href="#" class="link-dark link-underline-opacity-0 profile-link {% if admin not in role_id %} d-none {% endif %}">
                 <img src="../static/images/admin.jpg" class="rounded profile-img"> 
                 Admin
             </a>
         </div>
-    
     </body>
 </html>
-
-

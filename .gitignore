@@ -2,3 +2,5 @@
 __pycache__/
 my files/
 settings.py
+for_next_steps/
+test_data.sql

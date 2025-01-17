@@ -46,46 +46,54 @@
             .form-style{
                 padding-left: 20px;
             }
+            th, td {
+                word-wrap: break-word; /* Перенос длинных слов */
+                    }
         </style>
     </head>
     <body>
-        <!-- !!!!Не понятно пока как это использовать и надо ли 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-            <div class="alert alert-warning" role="alert">
-                {% for message in messages %}
-                    {{ message }}<br>
-                {% endfor %}
-            </div>
-            {% endif %}
-        {% endwith %} -->
-
-
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <ul class="nav nav-pills nav-fill" style="padding-left: 30px;">
-                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
+            {% if mentor_role_id in role_id %}
+                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+            {% endif %}
         </nav>
 
-        <div class="card-header card-style">
+        <div class="card-header">
             <u><h3 style="padding-bottom: 10px;">{{ page_title }}</h3></u>
         </div>
         
         <form class="form-style" action="{{ url_for('edit_info') }}" method="POST">
-            <textarea id="telegram_id" name="telegram_id" hidden >{{ user_data['telegram_id'] }}</textarea><br>
+            <textarea id="telegram_id" name="telegram_id" hidden >{{ user_data.get('telegram_id') }}</textarea><br>
             <label for="name">Name:</label><br>
-            <textarea id="name" name="name" {% if not editing %} readonly {% endif %}>{{ user_data['name'] }}</textarea><br>
+            <input id="name" name="name" {% if not editing %} readonly {% endif %} value="{{ user_data.get('name') }}"></input><br>
+            <label for="gmt">Chose your time and sign:</label><br>
+            <div class="d-flex align-items-center" >
+                <select name="gmt_sign" class="form-select w-auto" {% if not editing %} disabled {% endif %}>
+                    <option selected>{{ user_data.get('gmt_sign') }}</option>
+                    {% if user_data.get('gmt_sign') == '-' %}
+                        <option value="+">+</option>
+                    {% endif %}
+                    {% if user_data.get('gmt_sign') != '-' %}
+                        <option value="-">-</option>
+                    {% endif %}
+                </select>
+                <input type="time" id="gmt" name="gmt" 
+                       {% if not editing %} readonly {% endif %} 
+                       value="{{ user_data.get('gmt') }}" 
+                       class="form-control w-auto me-2">
+            </div>            
             <label for="telegram">Telegram:</label><br>
-            <textarea id="telegram" name="telegram" readonly>{{ user_data['telegram'] }}</textarea><br>
-            <label for="birthday">Birthday:</label><br>
-            <textarea id="birthday" name="birthday" {% if not editing %} readonly {% endif %}>{{ user_data['birthday'] }}</textarea><br>
+            <input id="telegram" name="telegram" value="{{ user_data.get('telegram') }}" readonly></input><br>
             <label for="phone">Phone:</label><br>
-            <textarea id="phone" name="phone" {% if not editing %} readonly {% endif %}>{{ user_data['phone'] }}</textarea><br>
+            <input id="phone" name="phone" value="{{ user_data.get('phone') }}" {% if not editing %} readonly {% endif %}></input><br>
             <label for="specialization">Specialization:</label><br>
-            {% for specialization in user_data['all_specializations'] %}
+            {% for specialization in user_data.get('all_specializations') %}
                 <div class="form-check form-check-inline">
                     <input name="specialization" class="form-check-input" type="checkbox" value={{ specialization[1] }}
-                            {% if specialization[1] in user_data['user_specializations_id'] %}
+                            {% if specialization[1] in user_data.get('user_specializations_id') %}
                                                     checked{% endif %} 
                                                     {% if not editing %} disabled {% endif %}>
                     <label class="form-check-label" for="flexCheckChecked">  
@@ -94,13 +102,12 @@
                 </div>
             {% endfor %} <br>
             <label for="description">Description:</label><br>
-            <textarea id="description" name="description" {% if not editing %} readonly {% endif %}>{{ user_data['description'] }}</textarea><br>
+            <textarea id="description" name="description" {% if not editing %} readonly {% endif %}>{{ user_data.get('description') }}</textarea><br>
             
             <button type="submit" name="action" value="edit" class="btn btn-primary {% if editing %} d-none {% endif %}">Edit information</button> 
             <button type="submit" name="action" value="submit" class="btn btn-primary {% if not editing %} d-none {% endif %}">Submit</button>
             <button type="submit" name="action" value="cancel" class="btn btn-primary {% if not editing %} d-none {% endif %}">Cancel</button>
-            <a href="{{  url_for('time_slots')  }}" class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Check time slots</a>
+            <a href="{{  url_for('create_time_slots')  }}" class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
         </form>
-
         </body>
 </html>

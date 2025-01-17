@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CDN via jsDelivr -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+        <!-- for icons -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+        <title>{{ page_title }}</title>
+        <style>
+            .profile-link {
+                display: inline-block; 
+                text-align: center;
+                margin: 10px;
+                text-decoration: none;
+                color: #212529;
+            }
+            .profile-link:hover {
+                color: #0d6efd;
+                text-decoration: underline;
+            }
+            .profile-img {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: block; /* Убедитесь, что изображение ведет себя как блок */
+                margin: 0 auto;
+            }
+            body {
+                background-image: url("../static/images/mentors.jpg");
+                background-size: cover;
+                background-position: center center;
+                background-attachment: fixed;
+                margin: 0;
+                height: 100vh; /* Занимает всю высоту экрана */
+            }
+            .card-header{
+                padding-left: 20px;
+                padding-bottom: 10px;
+            }
+            .form-style{
+                padding-left: 10px;
+                padding-bottom: 10px;
+            }
+
+        </style>
+    </head>
+    <body>
+        {% if successful_save == 'true' %}
+        <div class="alert alert-success" role="alert">
+            We save your time slots for this day, <br>
+            you can choose new day and new time slots
+        </div>
+        {% endif %}
+
+        {% if mistake_save == 'true' %}
+        <div class="alert alert-danger" role="alert">
+            We can't save your time slots, <br>
+            try again or write our admin a request.
+        </div>
+        {% endif %}
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+            </ul>
+            {% if mentor_role_id in role_id %}
+                <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
+            {% endif %}
+        </nav>
+
+        <div class="card-header">
+            <u><h4>{{ page_title }}</h4></u>
+        </div>
+        <form class="form-style" action="{{ url_for('find_timslots') }}" method="GET">
+            <h5 class="ms-3">You chose a mentor - {{ mentor_data.telegram }}:</h5>
+            <div class="text-danger-emphasis ms-3">if it's incorrect - try again or write to admin.</div>
+            <input name="mentor_telegram_id" class="form-control" type="text" value="{{ mentor_data.telegram_id }}" hidden>
+            <input name="mentor_id" class="form-control" type="text" value="{{ mentor_data.id }}" hidden>
+            {% if not gmt %}
+                <div class="ms-3">Choose your gmt:</div>
+                <div class="d-flex align-items-center m-2 mt-0">
+                    <select id="gmt_sign" name="gmt_sign" class="form-select mt-0" style="width: auto;" required>
+                        <option value="" disabled selected> choose </option>
+                        <option value="+">+</option>
+                        <option value="-">-</option>
+                    </select>
+                    <input type="time" id="gmt" name="gmt" style="width: auto;" 
+                    class="form-control m-2" required>
+                </div> 
+                <button id="submit_gmt" class="btn btn-success ms-3" type="submit" name="chose" value="chose_gmt" disabled>Submit</button>
+            {% else %}
+                <div class="d-flex align-items-center m-2 mt-0">
+                    <div class="ms-3">Your gmt:</div>
+                    <select id="gmt_sign" name="gmt_sign" class="form-select ms-2 mt-0" style="width: auto;" disabled>
+                        <option value="{{ gmt_sign }}">{{ gmt_sign }}</option>
+                    </select>
+                    <input type="time" id="gmt" name="gmt" style="width: auto;" 
+                    class="form-control m-2" value="{{ gmt }}" disabled>
+
+                    <input name="gmt_sign" class="form-control" type="text" value="{{ gmt_sign }}" hidden>
+                    <input name="gmt" class="form-control" type="text" value="{{ gmt }}" hidden>
+                </div>
+            {% endif %}
+            {% if chose_date or date %}
+                {% if not chose_date %}
+                    <div class="align-items-center" >
+                        <label class="form-style" for="time_slot">Choose an available date:</label>
+                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" required>
+                            <option value="" disabled selected>date: </option>
+                            {% for el in date %}
+                                <option value="{{ el }}">{{ el }}</option>
+                            {% endfor %}
+                        </select>
+                        <button id="submit_date" class="btn btn-success ms-3" name="chose" type="submit" value="chose_date" disabled>Choose date</button>
+                    </div>
+                {% else %}
+                    <div class="d-flex align-items-center m-2 mt-0">
+                        <div class="ms-3">Your date: </div>
+                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" disabled>
+                            <option value="{{ chose_date }}">{{ chose_date }}</option>
+                        </select>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {% if chose_time or time %}
+                {% if not chose_time %}
+                    <div>
+                        <label class="form-style" for="choseTime">Choose an available time:</label><br>
+                        {% for el in time %}
+                            <div class="form-check form-check-inline ms-3">
+                                <input id="choseTime" name="choseTime" class="form-check-input" type="checkbox" value="{{ el[0] }}">
+                                <label class="form-check-label" for="flexCheck">  
+                                    {{ el[1] }} 
+                                </label> 
+                            </div> 
+                        {% endfor %}
+                        <button id="submit_time" class="btn btn-primary ms-3" type="button" disabled>Choose time</button>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            <div id="description" hidden>
+                <label for="descriptionI">Your request is:</label><br>
+                <textarea id="descriptionI" name="descriptionI" 
+                       class="form-control form-control-sm input-stile" 
+                       type="text" style="width: auto;"></textarea>
+                <br><button id="createBooking" name="createBooking" value="Booking" type="submit" class="btn btn-primary ms-3" disabled>Complete booking</button> 
+            </div>
+
+        </form>
+
+        <script>
+            function openSubmitGMT() {
+                const gmtsignValue = document.getElementById('gmt_sign').value;
+                const gmtValue = document.getElementById('gmt').value;
+                const buttonSubmitGMT = document.getElementById('submit_gmt');
+                if (gmtsignValue && gmtValue) {
+                    buttonSubmitGMT.removeAttribute('disabled');
+                } else {
+                    buttonSubmitGMT.setAttribute('disabled', true);
+                }
+            }
+
+            function openChooseDate(){
+                const choseDate = document.getElementById('choseDate').value;
+                const buttonChooseDate = document.getElementById('submit_date');
+                if (choseDate) {
+                    buttonChooseDate.removeAttribute('disabled');
+                }else {
+                    buttonChooseDate.setAttribute('disabled', true);
+                }
+            }
+
+            function openChooseTime(){
+                const choseTime = document.getElementById('choseTime').value;
+                const buttonChooseTime = document.getElementById('submit_time');
+                if (choseTime) {
+                    buttonChooseTime.removeAttribute('disabled');
+                }else {
+                    buttonChooseTime.setAttribute('disabled', true);
+                }
+            }
+
+            function openRequestDescription(){
+                const buttonChooseTime = document.getElementById('submit_time');
+                const requestText = document.getElementById('description');
+                const requestTextI = document.getElementById('descriptionI');
+                if (buttonChooseTime) {
+                    requestText.removeAttribute('hidden');
+                    requestTextI.setAttribute('required', '')
+                }else {
+                    requestText.setAttribute('hidden', true);
+                    requestTextI.removeAttribute('required')
+                }
+            }
+           
+            function openBookingButtom(){
+                const descriptionI = document.getElementById('descriptionI');
+                const createBookingButtom = document.getElementById('createBooking');
+                if (descriptionI.value.trim() !== '') {
+                    createBookingButtom.removeAttribute('disabled');
+                }else {
+                    createBookingButtom.setAttribute('disabled', true);
+                }
+            }
+        
+            // Добавляем обработчики для обоих полей
+            document.getElementById('gmt_sign').addEventListener('change', openSubmitGMT);
+            document.getElementById('gmt').addEventListener('input', openSubmitGMT);
+            
+            document.getElementById('choseDate').addEventListener('change', openChooseDate);
+            document.getElementById('choseTime').addEventListener('change', openChooseTime);
+
+            document.getElementById('submit_time').addEventListener('click', openRequestDescription);
+            
+            document.getElementById('descriptionI').addEventListener('input', openBookingButtom);
+
+            document.addEventListener("DOMContentLoaded", () => {
+            const checkboxes = document.querySelectorAll('input[name="choseTime"]');
+            const submitButton = document.getElementById("createBooking");
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", () => {
+                    // Проверяем, выбран ли хотя бы один чекбокс
+                    const isAnyChecked = Array.from(checkboxes).some(cb => cb.checked);
+                    submitButton.disabled = !isAnyChecked; // Активируем кнопку, если есть выбор
+                    });
+                });
+            });
+            
+        </script>
+        </body>
+</html>

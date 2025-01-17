@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+<form id="post_form" action="{{ url_for('book_time') }}" method="POST">
+    <input type="hidden" name="gmt" value="{{ gmt }}">
+    <input type="hidden" name="mentor_telegram_id" value="{{ mentor_telegram_id }}">
+    <input type="hidden" name="gmt_sign" value="{{ gmt_sign }}">
+    <input type="hidden" name="date" value="{{ date }}">
+    <input type="hidden" name="time" value="{{ time }}">
+    <input type="hidden" name="chose_date" value="{{ chose_date }}">
+    <input type="hidden" name="chose_time" value="{{ chose_time }}">
+    <input type="hidden" name="successful_save" value="{{ successful_save }}">
+    <input type="hidden" name="mistake_save" value="{{ mistake_save }}">
+</form>
+<script>
+    document.getElementById("post_form").submit();
+</script>
+</body>
+</html>

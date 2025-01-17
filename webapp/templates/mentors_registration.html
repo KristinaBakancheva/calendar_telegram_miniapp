@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CDN via jsDelivr -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+        <!-- for icons -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+        <title>{{ page_title }}</title>
+        <style>
+            .profile-link {
+                display: inline-block; 
+                text-align: center;
+                margin: 10px;
+                text-decoration: none;
+                color: #212529;
+            }
+            .profile-link:hover {
+                color: #0d6efd;
+                text-decoration: underline;
+            }
+            .profile-img {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: block; /* Убедитесь, что изображение ведет себя как блок */
+                margin: 0 auto;
+            }
+            body {
+                background-image: url("../static/images/mentors.jpg"); /* Замените на путь к вашей картинке */
+                background-size: cover;
+                background-position: center center;
+                background-attachment: fixed;
+                margin: 0;
+                height: 100vh; /* Занимает всю высоту экрана */
+            }
+            .card-header{
+                padding-left: 20px;
+            }
+            .form-style{
+                padding-left: 20px;
+            }
+            .input-stile{
+                width: 300px;
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+            </ul>
+        </nav>
+
+        <div class="card-header card-style">
+            <u><h3>{{ page_title }}</h3></u>
+        </div>
+        
+
+        <form class="form-style" action="{{ url_for('create_profile') }}" method="POST">
+            <input name="telegram_id" class="form-control" type="text" value="{{ telegram_id }}" hidden>
+            <input name="role_id" class="form-control" type="text" value="{{ role_id }}" hidden>
+            <label for="name">Your name:</label><br>
+            <input name="name" class="form-control form-control-sm input-stile" type="text" placeholder="Alex" required>
+            <label for="gmt">Choose + or - in your GMT</label><br>
+            <div class="d-inline-flex align-items-center">
+                <select name="gmt_sign" class="form-select m-2 mt-0" required>
+                    <option value="+">+</option>
+                    <option value="-">-</option>
+                </select>
+                <input type="time" id="gmt" name="gmt" class="form-control m-2 mt-0" required>
+            </div> <br>
+            <label for="telegram">Your telegram:</label><br>
+            <input name="telegram" class="form-control form-control-sm input-stile" type="text" value="@{{ telegram }}" title="We got this nick from telegram, you can change it only on telegram" readonly>
+            <label for="phone">Your phone number:</label><br>
+            <input name="phone" class="form-control form-control-sm input-stile"
+                   pattern="\+[0-9]{1,15}" 
+                   type="text" 
+                   placeholder="+79999999999">
+            <div class="invalid-feedback">
+                Your number should start with "+" and contain only digits (1-15 digits allowed).
+            </div>
+            <label for="specialization">Specialization:</label><br>
+            {% for specialization in all_specializations %}
+                <div class="form-check form-check-inline">
+                    <input name="specialization" class="form-check-input" type="checkbox" value={{ specialization[1] }}>
+                    <label class="form-check-label" for="flexCheck">  
+                        {{ specialization[0] }}
+                    </label> 
+                </div>
+            {% endfor %} <br>
+            <label for="description">Description:</label><br>
+            <textarea name="description" class="form-control form-control-sm input-stile" type="text" placeholder="I have experience in Python and SQL" required></textarea>
+            <br><button type="submit" class="btn btn-primary">Send request</button> 
+        </form>
+
+        </body>
+</html>
