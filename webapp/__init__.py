@@ -233,8 +233,8 @@ def create_app():
     @app.route("/approve_event", methods=["POST"])
     def approve_event():
         approve_event_id = request.form.get("event_id")
-        result_delete = approve_db_event(approve_event_id)
-        if result_delete:
+        result_approve = approve_db_event(approve_event_id)
+        if result_approve:
             return redirect(url_for("my_calendar", successful_approve=True))
         return redirect(url_for("my_calendar", error_approve=True))
 
@@ -281,9 +281,9 @@ def create_app():
         date = ""
         time = ""
         if chose == "chose_gmt":
-            date = get_date_set(mentor_telegram_id, gmt, gmt_sign)
+            date = get_date_set(mentor_telegram_id, gmt, gmt_sign) or ""
         elif chose == "chose_date":
-            time = get_time_set(mentor_telegram_id, gmt, gmt_sign, chose_date)
+            time = get_time_set(mentor_telegram_id, gmt, gmt_sign, chose_date) or ""
         elif createBooking:
             result_creation = create_event(mentor_id, telegram_id, telegram,
                                            description, chose_time_id)
