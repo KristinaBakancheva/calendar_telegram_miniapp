@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+        <!-- Bootstrap CDN via jsDelivr -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+        <!-- for icons -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+
+        
+        <title>{{ page_title }}</title>
+        <style>
+            .profile-link {
+                display: inline-block; 
+                text-align: center;
+                margin: 10px;
+                text-decoration: none;
+                color: #212529;
+            }
+            .profile-link:hover {
+                color: #0d6efd;
+                text-decoration: underline;
+            }
+            .profile-img {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                display: block; 
+                margin: 0 auto;
+            }
+            body {
+                background-image: url("../static/images/mentors.jpg");
+                background-size: cover;
+                background-position: center center;
+                background-attachment: fixed;
+                margin: 0;
+                height: 100vh; 
+            }
+            .card-header{
+                padding-left: 20px;
+            }
+            .form-style{
+                padding-left: 20px;
+            }
+            th, td {
+                word-wrap: break-word; /* Перенос длинных слов */
+                    }
+        </style>
+    </head>
+    <body>
+
+        <!-- модальное окно CancelEventModal-->
+        <div class="modal fade" id="CancelEventModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <!-- содержимое -->
+                    <div class="modal-body">
+                        <p>
+                            Are you sure that you would like to cancel an event {{ data_event }} in UTS?
+                        </p>
+                    </div>
+                    <!-- подвал -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                        <form action="cancel_event" method="POST">
+                            <input type="hidden" id="event-id-input" name="event_id">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- модальное окно ApproveEventModal-->
+        <div class="modal fade" id="ApproveEventModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <!-- содержимое -->
+                    <div class="modal-body">
+                        <p>
+                            Are you sure that you would like to approve an event {{ data_event }} in UTS?
+                        </p>
+                    </div>
+                    <!-- подвал -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                        <form action="approve_event" method="POST">
+                            <input type="hidden" id="event-id-input" name="event_id">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- модальное окно DeleteTimeslotModal-->
+        <div class="modal fade" id="DeleteTimeslotModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <!-- содержимое -->
+                    <div class="modal-body">
+                        <p>
+                            Are you sure that you would like to delete a time slot {{ data_event }} in UTS?
+                        </p>
+                    </div>
+                    <!-- подвал -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                        <form action="delete_timeslot" method="POST">
+                            <input type="hidden" id="slot-id-input" name="slot_id">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- модальное окно AcceptCancelEventModal-->
+        <div class="modal fade" id="AcceptCancelEventModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <!-- содержимое -->
+                    <div class="modal-body">
+                        <p>
+                            Are you sure that you would like to approve canceling an event {{ data_event }} in UTS?
+                        </p>
+                    </div>
+                    <!-- подвал -->
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                        <form action="cancel_event" method="POST">
+                            <input type="hidden" id="event-id-input" name="event_id_approve">
+                            <button type="submit" class="btn btn-danger">Yes</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- /модальное окно -->
+
+        {% if successful_approve %}
+        <div class="alert alert-success" role="alert">
+            Your event was successfully approve.
+        </div>
+        {% endif %}
+
+        {% if error_approve %}
+        <div class="alert alert-danger" role="alert">
+            We can't accept your event.<br>Try again or write to admin.
+        </div>
+        {% endif %}
+
+        {% if successful_cancel %}
+        <div class="alert alert-success" role="alert">
+            Your event was successfully canceled.
+        </div>
+        {% endif %}
+
+        {% if error_cancel %}
+        <div class="alert alert-danger" role="alert">
+            We can't cancel your event.<br>Try again or write to admin.
+        </div>
+        {% endif %}
+
+        {% if successful_create %}
+        <div class="alert alert-success" role="alert">
+            Your event was successfully created.
+        </div>
+        {% endif %}
+
+        {% if mistake_create %}
+        <div class="alert alert-danger" role="alert">
+            We can't create your event.<br>Try again or write to admin.
+        </div>
+        {% endif %}
+
+        {% if successful_delete %}
+        <div class="alert alert-success" role="alert">
+            Your time slot was successfully deleted.
+        </div>
+        {% endif %}
+
+        {% if error_delete %}
+        <div class="alert alert-danger" role="alert">
+            We can't delete your time slot.<br>Try again or write to admin.
+        </div>
+        {% endif %}
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ homepage }}</a>
+            </ul>
+            {% if mentor_role_id in role_id %}
+                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+            {% endif %}
+        </nav>
+        
+        <div class="card-header">
+            <u><h3>{{ page_title }}</h3></u>
+            {% if mentor_role_id in role_id %}
+                <p>You see time in your gmt - "{{ gmt_sign }}{{ gmt }}", <br>you can chage gmt on your profile.</p>
+            {% elif gmt %}
+                <p>You see time in gmt - "{{ gmt_sign }}{{ gmt }}", <br>you can chouse gmt and I will update time.</p>
+                <form action="/my_calendar" method="GET" class="d-inline-flex">
+                    <div class="d-flex align-items-center m-2">
+                        <select name="gmt_sign" class="form-select">
+                            <option value="" disabled selected>Choose + or - in your GMT:</option>
+                            <option value="+">+</option>
+                            <option value="-">-</option>
+                        </select>
+                        <input type="time" id="gmt" name="gmt" 
+                               class="form-control m-2">
+                    </div> 
+                    <button class="btn btn-success" type="submit">Choose gmt</button>
+                </form>
+            {% else %}
+                <p>You see time in UTS, you can <br>chouse gmt and I will update time.</p>
+                <form action="/my_calendar" method="GET" class="d-inline-flex">
+                    <div class="d-flex align-items-center m-2">
+                        <select name="gmt_sign" class="form-select">
+                            <option value="" disabled selected>Choose + or - in your GMT:</option>
+                            <option value="+">+</option>
+                            <option value="-">-</option>
+                        </select>
+                        <input type="time" id="gmt" name="gmt" 
+                               class="form-control m-2">
+                    </div> 
+                    <button class="btn btn-success" type="submit">Choose gmt</button>
+                </form>  
+            {% endif %}
+        </div>
+        <br><form class="form-group" action="{{ url_for('mentors_search') }}" method="GET" style="padding-left: 15px;"> 
+            <div class="table table-bordered table-striped table-hover w-100">
+                <table class="table w-70">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Start date</th>
+                            <th scope="col">End Date</th>
+                            <th scope="col">Client</th>
+                            <th scope="col">Mentor</th>
+                            <th scope="col">Request</th>
+                            <th scope="col">Status</th>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for el in events_gmt %}
+                        <tr>
+                            <th scope="row"></th>
+                            <td>{{ el.get('start_date') }}</td>
+                            <td>{{ el.get('end_date') }}</td>
+                            <td>{% if el.get('client_telegram') %} {{ el.get('client_telegram') }} {% endif %}</td>
+                            <td>{{ el.get('mentor_name') }} - {{ el.get('mentor_telegram') }}</td>
+                            <td>{% if el.get('request') %} {{ el.get('request') }} {% endif %}</td>
+                            <td class="fw-semibold 
+                                        {% if el.get('status_name') == 'booked'%}
+                                            text-success
+                                        {% elif el.get('status_name') == 'cancel' %}
+                                            text-danger
+                                        {% elif el.get('status_name') == 'request to mentor' %}
+                                            text-warning
+                                        {% elif not el.get('event_id') %}
+                                            text-primary
+                                        {% endif %}">
+                                {% if el.get('event_id') %} {{ el.get('status_name') }} {% else %} available {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-success {% if el.get('status_name') != 'request to mentor' or mentor_role_id not in role_id or user_id != el.get('mentor_id') %} d-none {% endif %}" 
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#ApproveEventModal"
+                                data-event-id="{{ el.get('event_id') }}">
+                                    Approve event
+                                </button>
+                                <button class="btn btn-success {% if el.get('status_name') != 'booked' and el.get('status_name') != 'request to mentor' %} d-none {% endif %}" 
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#CancelEventModal"
+                                data-event-id="{{ el.get('event_id') }}">
+                                    Cancel event
+                                </button>
+                                <button class="btn btn-success {% if el.get('status_name') != 'request cancel' or mentor_role_id not in role_id or user_id != el.get('mentor_id') %} d-none {% endif %}" 
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#AcceptCancelEventModal"
+                                data-event-id="{{ el.get('event_id') }}">
+                                    Accept cancel event
+                                </button>
+                                        
+                            </td>
+                            <td>
+                                <button type="button" 
+                                class="btn btn-primary {% if user_id != el.get('mentor_id') or el.get('status_name') == 'cancel' %} d-none {% endif %} {% if el.get('event_id') %} disabled {% endif %}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#DeleteTimeslotModal" 
+                                data-slot-id="{{ el.get('timeslot_id') }}">
+                                    Delete time slot
+                                </button>
+                                
+                            </td> 
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+        </form>
+        <script>
+            const cancelEventModal = document.getElementById("CancelEventModal");
+            console.log("Button triggered cancelEventModal:", cancelEventModal);
+
+            cancelEventModal.addEventListener("show.bs.modal", function (event) {
+                //Кнопка, вызвавшая модальное окно
+                console.log("tst");
+
+                const button = event.relatedTarget;
+                console.log("Button triggered modal:", button);
+                
+                // Получаем значение data-event-id
+                const eventId = button.getAttribute('data-event-id');
+                console.log("Event ID:", eventId);
+        
+                // Устанавливаем значение в скрытое поле формы
+                const eventIdInput = cancelEventModal.querySelector('#event-id-input');
+                eventIdInput.value = eventId;
+            });
+
+            const approveEventModal = document.getElementById("ApproveEventModal");
+            console.log("Button triggered approveEventModal:", approveEventModal);
+
+            approveEventModal.addEventListener("show.bs.modal", function (event) {
+                //Кнопка, вызвавшая модальное окно
+                console.log("tst");
+
+                const button = event.relatedTarget;
+                console.log("Button triggered modal:", button);
+                
+                // Получаем значение data-event-id
+                const eventId = button.getAttribute('data-event-id');
+                console.log("Event ID:", eventId);
+        
+                // Устанавливаем значение в скрытое поле формы
+                const eventIdInput = approveEventModal.querySelector('#event-id-input');
+                eventIdInput.value = eventId;
+            });
+            
+            const deleteTimeslotModal = document.getElementById("DeleteTimeslotModal");
+            console.log("Button triggered deleteTimeslotModal:", deleteTimeslotModal);
+
+            deleteTimeslotModal.addEventListener("show.bs.modal", function (event) {
+                //Кнопка, вызвавшая модальное окно
+                console.log("tst");
+
+                const button = event.relatedTarget;
+                console.log("Button triggered modal:", button);
+                
+                // Получаем значение data-slot-id
+                const slotId = button.getAttribute('data-slot-id');
+                console.log("SLot ID:", slotId);
+        
+                // Устанавливаем значение в скрытое поле формы
+                const slotIdInput = deleteTimeslotModal.querySelector('#slot-id-input');
+                slotIdInput.value = slotId;
+            });
+            
+            const acceptCancelEventModal = document.getElementById("AcceptCancelEventModal");
+            console.log("Button triggered acceptCancelEventModal:", acceptCancelEventModal);
+
+            acceptCancelEventModal.addEventListener("show.bs.modal", function (event) {
+                //Кнопка, вызвавшая модальное окно
+                console.log("tst");
+
+                const button = event.relatedTarget;
+                console.log("Button triggered modal:", button);
+                
+                // Получаем значение data-event-id
+                const eventId = button.getAttribute('data-event-id');
+                console.log("Event ID:", eventId);
+        
+                // Устанавливаем значение в скрытое поле формы
+                const eventIdInput = acceptCancelEventModal.querySelector('#event-id-input');
+                eventIdInput.value = eventId;
+            });
+        </script>
+    </body>
+</html>

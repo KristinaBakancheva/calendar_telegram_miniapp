@@ -12,7 +12,7 @@
         <!-- for icons -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
-        <title>{{page_title}}</title>
+        <title>{{ page_title }}</title>
         <style>
             .profile-link {
                 display: inline-block; 
@@ -44,27 +44,67 @@
                 padding-left: 20px;
                 padding-bottom: 10px;
             }
+            th, td {
+                word-wrap: break-word; /* Перенос длинных слов */
+                    }
         </style>
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <ul class="nav nav-pills nav-fill" style="padding-left: 30px;">
-                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{homepage}}</a>
+            <ul class="nav nav-pills nav-fill ps-3">
+                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
+            {% if mentor_role_id in role_id %}
+                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+            {% endif %}
         </nav>
 
-
-        
         <div class="card-header card-style">
-            <u><h3>{{page_title}}</h3></u>
+            <u><h3>{{ page_title }}</h3></u>
         </div>
-        <form action="{{ url_for('mentors_search') }}" method="GET" style="padding-left: 15px;"> 
-            <input  type="search" name="search-mentors" style="width: 300px;" placeholder="@telegram, name or phone number..."  >
-            <button type="submit" name="action" value="search"><i class="bi bi-search"></i></button>
-            <br><button class="btn btn-primary" type="submit" name="action" value="registration">Became a mentor</button>
+        <form class="form-group" action="{{ url_for('mentors_search') }}" method="GET" style="padding-left: 15px;"> 
+            <div class="d-flex">
+                <input class="form-control w-50" type="search" name="search-mentors" placeholder="@telegram, name or phone..."></input>
+                <button type="submit" name="action" value="search"><i class="bi bi-search"></i></button>
+
+            </div>
+            {% if search_result and search_result != 'empty' %}
+                <div class="table-responsive mt-2">
+                    <table class="table w-100">
+                        <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Telegram</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Specialization</th>
+                            <th scope="col">Description</th>
+                            <th scope="col"></th>
+                        </tr>
+                        </thead>
+                            <tbody>
+                                {% for el in search_result %}
+                                <tr>
+                                    <th class="" scope="row"></th>
+                                    <td>{{ el.name }}</td>
+                                    <td>{{ el.telegram }}</td>
+                                    <td>{{ el.phone }}</td>
+                                    <td>{{ el.specializations | join(', ') }}</td>
+                                    <td>{{ el.description }} {{ el.telegram_id }}</td>
+                                    <td>
+                                        <button class="btn btn-success" type="submit" name="create_event" value="{{ el.telegram_id }}">Book time</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                    </table><br>
+                </div>
+            {% elif search_result == 'empty' %}
+                <br><h4 class="text-danger">We don't have a mentor with your words "{{ search_query[0] }}". <br>You can try searching again.</h4>
+            {% endif %}
+            <p class="{% if not blocked %} d-none {% endif %}"> You can't be a mentor any more. <br>If you want to change it you <br>can try to send a request to admin </p>
+            <br><button class="btn btn-primary  {% if mentor_role_id in role_id or blocked %} d-none {% endif %}" type="submit" name="action" value="registration">Became a mentor</button>
+            <button class="btn btn-primary  {% if not blocked %} d-none {% endif %}" type="submit" name="action" value="request_to_admin">Send request to admin</button>
         </form>
     </body>
 </html>
-
-
-
