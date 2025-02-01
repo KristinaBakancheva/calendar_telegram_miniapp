@@ -63,7 +63,7 @@
                     <!-- содержимое -->
                     <div class="modal-body">
                         <p>
-                            Are you sure that you would like to cancel an event {{ data_event }} in UTS?
+                            Are you sure that you would like to cancel an event {{ data_event }} in UTC?
                         </p>
                     </div>
                     <!-- подвал -->
@@ -85,7 +85,7 @@
                     <!-- содержимое -->
                     <div class="modal-body">
                         <p>
-                            Are you sure that you would like to approve an event {{ data_event }} in UTS?
+                            Are you sure that you would like to approve an event {{ data_event }} in UTC?
                         </p>
                     </div>
                     <!-- подвал -->
@@ -107,7 +107,7 @@
                     <!-- содержимое -->
                     <div class="modal-body">
                         <p>
-                            Are you sure that you would like to delete a time slot {{ data_event }} in UTS?
+                            Are you sure that you would like to delete a time slot {{ data_event }} in UTC?
                         </p>
                     </div>
                     <!-- подвал -->
@@ -129,7 +129,7 @@
                     <!-- содержимое -->
                     <div class="modal-body">
                         <p>
-                            Are you sure that you would like to approve canceling an event {{ data_event }} in UTS?
+                            Are you sure that you would like to approve canceling an event {{ data_event }} in UTC?
                         </p>
                     </div>
                     <!-- подвал -->
@@ -222,7 +222,7 @@
                     <button class="btn btn-success" type="submit">Choose gmt</button>
                 </form>
             {% else %}
-                <p>You see time in UTS, you can <br>chouse gmt and I will update time.</p>
+                <p>You see time in UTC, you can <br>chouse gmt and I will update time.</p>
                 <form action="/my_calendar" method="GET" class="d-inline-flex">
                     <div class="d-flex align-items-center m-2">
                         <select name="gmt_sign" class="form-select">

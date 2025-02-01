@@ -135,8 +135,8 @@ def save_timeslots(request_form, gmt, gmt_sign, telegram_id,
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M")-td
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d %H:%M")-td
         new_timeslots = TimeSlots(user_id=user_db.id,
-                                  start_date_uts=start_date,
-                                  end_date_uts=end_date)
+                                  start_date_utc=start_date,
+                                  end_date_utc=end_date)
         db_session.add(new_timeslots)
         db_session.commit()
     if new_timeslots.id:
@@ -154,7 +154,7 @@ def cancel_db_event(cancel_event_id, free_cancel, approve_cancel=False):
                              Events.slot_id,
                              Events.status_id,
                              TimeSlots.id,
-                             TimeSlots.start_date_uts
+                             TimeSlots.start_date_utc
                              ).join(TimeSlots, TimeSlots.id == Events.slot_id
                                     ).filter(
                                         (Events.id == cancel_event_id) &

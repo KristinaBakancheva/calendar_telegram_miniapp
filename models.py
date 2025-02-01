@@ -17,7 +17,7 @@ class User(Base):
     mentors_blocked = Column(Boolean, default=False)
 
     def __repr__(self):
-        return f"User {self.id} - {self.name} - {self.phone} - {self.mentors_blocked} - {self.gmt} - {self.gmt_sign}"
+        return f"User {self.id} - {self.name}"
 
 
 class Role(Base):
@@ -103,13 +103,11 @@ class TimeSlots(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    start_date_uts = Column(DateTime, nullable=False)
-    end_date_uts = Column(DateTime, nullable=False)
+    start_date_utc = Column(DateTime, nullable=False)
+    end_date_utc = Column(DateTime, nullable=False)
 
     def __repr__(self):
-        return f"User {self.id} - {self.start_date_uts}"
-    
-    
+        return f"User {self.id} - {self.start_date_utc}"
 
 
 class Client(Base):
