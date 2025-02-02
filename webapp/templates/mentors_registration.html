@@ -54,7 +54,7 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{  url_for('homepage', telegram=telegram, telegram_id=telegram_id)  }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
         </nav>
 

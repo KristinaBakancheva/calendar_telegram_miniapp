@@ -52,17 +52,19 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{ url_for('homepage', telegram=telegram, telegram_id=telegram_id) }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
-                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+                <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
             {% endif %}
         </nav>
 
         <div class="card-header card-style">
             <u><h3>{{ page_title }}</h3></u>
         </div>
-        <form class="form-group" action="{{ url_for('mentors_search') }}" method="GET" style="padding-left: 15px;"> 
+        <form class="form-group" action="{{ url_for('mentors_search') }}" method="GET" style="padding-left: 15px;">
+            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+            <input type="hidden" name="telegram" value="{{ telegram }}">
             <div class="d-flex">
                 <input class="form-control w-50" type="search" name="search-mentors" placeholder="@telegram, name or phone..."></input>
                 <button type="submit" name="action" value="search"><i class="bi bi-search"></i></button>
@@ -90,7 +92,7 @@
                                     <td>{{ el.telegram }}</td>
                                     <td>{{ el.phone }}</td>
                                     <td>{{ el.specializations | join(', ') }}</td>
-                                    <td>{{ el.description }} {{ el.telegram_id }}</td>
+                                    <td>{{ el.description }}</td>
                                     <td>
                                         <button class="btn btn-success" type="submit" name="create_event" value="{{ el.telegram_id }}">Book time</button>
                                     </td>

@@ -54,10 +54,10 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{ url_for('homepage', telegram=telegram, telegram_id=telegram_id) }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
-                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+                <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
             {% endif %}
         </nav>
 
@@ -66,7 +66,8 @@
         </div>
         
         <form class="form-style" action="{{ url_for('edit_info') }}" method="POST">
-            <textarea id="telegram_id" name="telegram_id" hidden >{{ user_data.get('telegram_id') }}</textarea><br>
+            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+            <input type="hidden" name="telegram" value="{{ telegram }}">
             <label for="name">Name:</label><br>
             <input id="name" name="name" {% if not editing %} readonly {% endif %} value="{{ user_data.get('name') }}"></input><br>
             <label for="gmt">Chose your time and sign:</label><br>
@@ -107,7 +108,7 @@
             <button type="submit" name="action" value="edit" class="btn btn-primary {% if editing %} d-none {% endif %}">Edit information</button> 
             <button type="submit" name="action" value="submit" class="btn btn-primary {% if not editing %} d-none {% endif %}">Submit</button>
             <button type="submit" name="action" value="cancel" class="btn btn-primary {% if not editing %} d-none {% endif %}">Cancel</button>
-            <a href="{{  url_for('create_time_slots')  }}" class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
+            <a href="{{  url_for('create_time_slots', telegram=telegram, telegram_id=telegram_id)  }}" class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
         </form>
         </body>
 </html>

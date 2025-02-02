@@ -71,27 +71,28 @@
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{ url_for('homepage') }}" class="navbar-brand" >{{ page_title }}</a>
+                <a href="{{ url_for('homepage', telegram=telegram, telegram_id=telegram_id) }}" class="navbar-brand" >{{ page_title }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
-                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+                <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
             {% endif %}
         </nav>
         
         <div class="container card-container">
-            <a href="{{ url_for('my_profile') }}" class="link-dark link-underline-opacity-0 profile-link
+            <a href="{{ url_for('my_profile', telegram_id=telegram_id, telegram=telegram) }}" class="link-dark link-underline-opacity-0 profile-link
                                                         {% if mentor_role_id not in role_id %} d-none {% endif %}">
                 <img src="../static/images/my_profile.jpg" class="rounded profile-img"> 
                 My profile
             </a>
-            <a href="{{ url_for('my_calendar') }}" class="link-dark link-underline-opacity-0 profile-link">
+            <a href="{{ url_for('my_calendar', telegram_id=telegram_id, telegram=telegram) }}" class="link-dark link-underline-opacity-0 profile-link">
                 <img src="../static/images/calendar.jpg" class="rounded profile-img"> 
                 My calendar
             </a>
-            <a href="{{ url_for('mentors') }}" class="link-dark link-underline-opacity-0 profile-link">
+            <a href="{{ url_for('mentors', telegram_id=telegram_id, telegram=telegram) }}" class="link-dark link-underline-opacity-0 profile-link">
                 <img src="../static/images/you_got_this.jpg" class="rounded profile-img"> 
                 Mentors
             </a>
+            <!-- not ready yet -->
             <a href="#" class="link-dark link-underline-opacity-0 profile-link {% if admin not in role_id %} d-none {% endif %}">
                 <img src="../static/images/admin.jpg" class="rounded profile-img"> 
                 Admin

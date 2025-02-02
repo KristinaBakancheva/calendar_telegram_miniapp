@@ -68,17 +68,17 @@
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{  url_for('homepage', telegram=telegram, telegram_id=telegram_id)  }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
-                <h2 class="text-end ms-auto m-2">Hi, {{ name }}</h2>
+                <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
             {% endif %}
         </nav>
 
         <div class="card-header">
             <u><h3>{{ page_title }}</h3></u>
         </div>
-        <form class="form-style" action="{{ url_for('update_time_slots') }}" method="POST">
+        <form class="form-style" action="{{ url_for('update_time_slots', telegram=telegram, telegram_id=telegram_id) }}" method="POST">
             <div class="mb-3 form-style w-50">
                 <label for="datePicker" class="form-label">Choose a date:</label>
                 <input type="date" class="form-control" id="datePicker" name="date">
