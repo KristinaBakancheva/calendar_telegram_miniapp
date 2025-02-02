@@ -1,13 +1,8 @@
 import logging
 import settings
 
-from telegram.ext import (Application, CommandHandler,
-                          MessageHandler, CallbackQueryHandler,
-                          ConversationHandler)
-from telegram import (ReplyKeyboardMarkup, InlineKeyboardButton,
-                      InlineKeyboardMarkup, KeyboardButton, Update,
-                      ReplyKeyboardRemove, WebAppInfo
-                      )
+from telegram.ext import (Application, CommandHandler)
+from telegram import (ReplyKeyboardMarkup, KeyboardButton, Update, WebAppInfo)
 
 logging.basicConfig(filename="bot.log", level=logging.INFO)
 
@@ -30,7 +25,6 @@ def main():
     application = Application.builder().token(settings.API_KEY).build()
     application.add_handler(CommandHandler("start", start))
 
-    logging.info("The bot started")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 

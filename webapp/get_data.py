@@ -1,8 +1,17 @@
 import ast
-from datetime import datetime, timedelta 
+from datetime import datetime, timedelta
 from db import db_session
-from models import User, Specialization, UserSpecialization, UserRole, Role, TimeSlots, Events, Status, Client
-from sqlalchemy import func, desc, or_, and_, union, literal
+from models import (User, Specialization, UserSpecialization, UserRole,
+                    TimeSlots, Events, Status, Client)
+from sqlalchemy import func, union, literal
+
+
+def get_status_id(status_name):
+    status = Status.query.filter(Status.name == status_name).first()
+    if status:
+        return status.id
+    else:
+        return 0
 
 
 def get_all_specializations():
@@ -192,10 +201,8 @@ def generate_time_list(start_time, end_time, interval_minutes):
     return intervals
 
 
-def get_my_calendar(telegram_id):
-    events = list()
-    cancel_status = Status.query.filter(Status.name == "cancel").first()
-
+def get_available_slots(mentor_telegram_id, client_telegram_id=0):
+    cancel_status_id = get_status_id("cancel")
     all_events = db_session.query(
         TimeSlots.start_date_utc.label("start_date"),
         TimeSlots.end_date_utc.label("end_date"),
@@ -212,69 +219,65 @@ def get_my_calendar(telegram_id):
         Client.telegram.label("client_telegram"),
         Client.telegram_id.label("client_telegram_id")
         ).outerjoin(
-                    Events,
-                    Events.slot_id == TimeSlots.id
+                User,
+                TimeSlots.user_id == User.id
         ).outerjoin(
-                    Status,
-                    Events.status_id == Status.id
+                        Events,
+                        Events.slot_id == TimeSlots.id
         ).outerjoin(
-                    Client,
-                    Events.client_id == Client.id
+                        Client,
+                        Client.id == Events.client_id
         ).outerjoin(
-                    User,
-                    TimeSlots.user_id == User.id
-                                 ).filter(
-        (User.telegram_id == telegram_id) |
-        (Client.telegram_id == telegram_id))
-    canceled_events = (
-        db_session.query(TimeSlots.id, Events.slot_id)
-        .outerjoin(
-                    Events,
-                    and_(
-                        Events.slot_id == TimeSlots.id,
-                        Events.status_id == cancel_status.id
-                        )
-        )
-        .outerjoin(User, TimeSlots.user_id == User.id)
-        .outerjoin(Client, Events.client_id == Client.id)
-        .filter(
-            (User.telegram_id == telegram_id) |
-            (Client.telegram_id == telegram_id)
-        )
-        .distinct()
-    )
-    canceled_events_list = [row.slot_id for row in canceled_events
-                            if row.slot_id is not None]
-    for i in range(len(canceled_events_list)):
-        el = canceled_events_list[i]
-        other_status = Events.query.filter(
-                                        (Events.slot_id == el) &
-                                        (Events.status_id != cancel_status.id)
-                                          ).all()
-        if other_status:
-            canceled_events_list[i] = None
-    canceled_events_list = [
-                el for el in canceled_events_list if el is not None
-                           ]
-    cancel_avalaibale_events = db_session.query(
-                TimeSlots.start_date_utc.label("start_date"),
-                TimeSlots.end_date_utc.label("end_date"),
-                TimeSlots.id.label("timeslot_id"),
-                TimeSlots.user_id.label("mentor_id"),
-                literal(None).label("mentor_telegram_id"),
-                literal(None).label("mentor_telegram"),
-                literal(None).label("mentor_name"),
-                literal(None).label("event_id"),
-                literal(None).label("request"),
-                literal(None).label("client_id"),
-                literal(None).label("status_id"),
-                literal(None).label("status_name"),
-                literal(None).label("client_telegram"),
-                literal(None).label("client_telegram_id")
-                            ).filter(TimeSlots.id.in_(canceled_events_list))
+                        Status,
+                        Status.id == Events.status_id
+        ).filter((User.telegram_id == mentor_telegram_id) |
+                 (Client.telegram_id == client_telegram_id))
+    no_events = all_events.filter(Events.id.is_(None) &
+                                  (User.telegram_id == mentor_telegram_id))
+    canceled_events = all_events.filter(
+                                    (Events.status_id == cancel_status_id) &
+                                    (User.telegram_id == mentor_telegram_id)
+                                        ).distinct()
+    canceled_events_set = {row.timeslot_id for row in canceled_events
+                           if row.timeslot_id is not None}
+    not_only_cancel = all_events.filter(
+                                    (~Events.id.is_(None)) &
+                                    (TimeSlots.id.in_(canceled_events_set)) &
+                                    (Events.status_id != cancel_status_id) &
+                                    (User.telegram_id == mentor_telegram_id))
+    not_only_cancel_set = {row.timeslot_id for row in not_only_cancel}
+    cancel_available_events = db_session.query(
+        TimeSlots.start_date_utc.label("start_date"),
+        TimeSlots.end_date_utc.label("end_date"),
+        TimeSlots.id.label("timeslot_id"),
+        User.id.label("mentor_id"),
+        User.telegram_id.label("mentor_telegram_id"),
+        User.telegram.label("mentor_telegram"),
+        User.name.label("mentor_name"),
+        literal(None).label("event_id"),
+        literal(None).label("request"),
+        literal(None).label("client_id"),
+        literal(None).label("status_id"),
+        literal(None).label("status_name"),
+        literal(None).label("client_telegram"),
+        literal(None).label("client_telegram_id")
+        ).join(
+                User,
+                TimeSlots.user_id == User.id
+        ).filter(
+                    (TimeSlots.id.in_(canceled_events_set)) &
+                    (~ TimeSlots.id.in_(not_only_cancel_set)) &
+                    (TimeSlots.active.is_(True)))
+    return all_events, no_events, cancel_available_events
+
+
+def get_my_calendar(telegram_id):
+    events = list()
+    all_events, no_events, cancel_available_events = get_available_slots(
+                                                telegram_id, telegram_id)
     query_events = union(
                             all_events,
-                            cancel_avalaibale_events
+                            cancel_available_events
                         ).alias("events_union")
     ordered_query_events = db_session.query(
         query_events).order_by(query_events.c.start_date)
@@ -305,31 +308,28 @@ def get_my_calendar_gmt(events, gmt, gmt_sign):
 
 
 def get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign):
-    mentor_db = get_user_data(telegram_id)
-    timeslots_table = db_session.query(
-                                TimeSlots.id.label("timeslot_id"),
-                                TimeSlots.start_date_utc.label("start_date"),
-                                TimeSlots.end_date_utc.label("end_date")
-                                     ).outerjoin(
-                                        Events,
-                                        Events.slot_id == TimeSlots.id
-                                     ).filter(
-                                (TimeSlots.user_id == mentor_db.get("id")) &
-                                (Events.slot_id == None))
-    columns = [t["name"] for t in timeslots_table.column_descriptions]
-    if not timeslots_table.all():
+    all_events, no_events, cancel_available_events = get_available_slots(
+                                                telegram_id)
+    timeslots_table = union(
+                            no_events,
+                            cancel_available_events
+                        ).alias("events_union")
+    columns = [t["name"] for t in no_events.column_descriptions]
+    if not db_session.query(timeslots_table).all():
         return None
     hours, minutes = map(int, gmt.split(":"))
     td = timedelta(hours=hours, minutes=minutes)
     timeslots = list()
-    for slot in timeslots_table.all():
+    for slot in db_session.query(timeslots_table).all():
         dict_slots = dict()
         for i in range(len(columns)):
             if columns[i] == "start_date" or columns[i] == "end_date":
                 if gmt_sign == "-":
-                    dict_slots[columns[i]] = slot[i] - td
+                    if datetime.now() < slot[i] - td:
+                        dict_slots[columns[i]] = slot[i] - td
                 else:
-                    dict_slots[columns[i]] = slot[i] + td
+                    if datetime.now() < slot[i] + td:
+                        dict_slots[columns[i]] = slot[i] + td
             else:
                 dict_slots[columns[i]] = slot[i]
         timeslots.append(dict_slots)
@@ -342,9 +342,10 @@ def get_date_set(telegram_id, gmt="00:00", gmt_sign="+"):
     if not timeslots:
         return None
     for slot in timeslots:
-        date = slot.get("start_date").date()
-        date_str = date.strftime("%d-%m-%Y")
-        set_date.add(date_str)
+        date = slot.get("start_date")
+        if date:
+            date_str = date.date().strftime("%d-%m-%Y")
+            set_date.add(date_str)
     return set_date
 
 
@@ -355,11 +356,14 @@ def get_time_set(telegram_id, gmt, gmt_sign, str_date):
         return None
     date = datetime.strptime(str_date, "%Y-%m-%d").date()
     for slot in timeslots:
-        if slot.get("start_date").date() == date:
-            start_time_str = slot.get("start_date").time().strftime("%H:%M")
-            end_time_str = slot.get("end_date").time().strftime("%H:%M")
-            set_time.add((str(slot.get("timeslot_id")) + "=" + start_time_str + "-"
-                          + end_time_str))
+        slot_date_start = slot.get("start_date")
+        slot_date_end = slot.get("end_date")
+        if slot_date_start:
+            if slot_date_start.date() == date:
+                start_time_str = slot_date_start.time().strftime("%H:%M")
+                end_time_str = slot_date_end.time().strftime("%H:%M")
+                set_time.add((str(slot.get("timeslot_id")) + "=" +
+                              start_time_str + "-" + end_time_str))
     return set_time
 
 

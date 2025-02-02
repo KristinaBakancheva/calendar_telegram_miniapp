@@ -105,6 +105,7 @@ class TimeSlots(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     start_date_utc = Column(DateTime, nullable=False)
     end_date_utc = Column(DateTime, nullable=False)
+    active = Column(Boolean, default=True)
 
     def __repr__(self):
         return f"User {self.id} - {self.start_date_utc}"

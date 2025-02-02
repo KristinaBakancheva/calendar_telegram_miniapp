@@ -68,7 +68,7 @@
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{  url_for('homepage', telegram=telegram, telegram_id=telegram_id)  }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
                 <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
@@ -79,6 +79,8 @@
             <u><h4>{{ page_title }}</h4></u>
         </div>
         <form class="form-style" action="{{ url_for('find_timslots') }}" method="GET">
+            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+            <input type="hidden" name="telegram" value="{{ telegram }}">
             <h5 class="ms-3">You chose a mentor - {{ mentor_data.telegram }}:</h5>
             <div class="text-danger-emphasis ms-3">if it's incorrect - try again or write to admin.</div>
             <input name="mentor_telegram_id" class="form-control" type="text" value="{{ mentor_data.telegram_id }}" hidden>
@@ -107,45 +109,41 @@
                     <input name="gmt_sign" class="form-control" type="text" value="{{ gmt_sign }}" hidden>
                     <input name="gmt" class="form-control" type="text" value="{{ gmt }}" hidden>
                 </div>
-            {% endif %}
-            {% if chose_date or date %}
+                {% if not chose_date and not date %}
+                    <div class="ms-3">The mentor does not have <br>an available date now. <br>You should check it later</div>
+                {% endif %}
                 {% if not chose_date %}
                     <div class="align-items-center" >
-                        <label class="form-style" for="time_slot">Choose an available date:</label>
-                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" required>
-                            <option value="" disabled selected>date: </option>
-                            {% for el in date %}
-                                <option value="{{ el }}">{{ el }}</option>
-                            {% endfor %}
-                        </select>
-                        <button id="submit_date" class="btn btn-success ms-3" name="chose" type="submit" value="chose_date" disabled>Choose date</button>
+                            <label class="form-style" for="time_slot">Choose an available date:</label>
+                            <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" required>
+                                <option value="" disabled selected>date: </option>
+                                {% for el in date %}
+                                    <option value="{{ el }}">{{ el }}</option>
+                                {% endfor %}
+                            </select>
+                            <button id="submit_date" class="btn btn-success ms-3" name="chose" type="submit" value="chose_date" disabled>Choose date</button>
                     </div>
                 {% else %}
                     <div class="d-flex align-items-center m-2 mt-0">
-                        <div class="ms-3">Your date: </div>
-                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" disabled>
-                            <option value="{{ chose_date }}">{{ chose_date }}</option>
-                        </select>
+                            <div class="ms-3">Your date: </div>
+                            <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" disabled>
+                                <option value="{{ chose_date }}">{{ chose_date }}</option>
+                            </select>
                     </div>
-                {% endif %}
-            {% else %}
-                <div class="ms-3">The mentor does not have <br>an available date now. <br>You should check it later</div>  
-            {% endif %}
-
-            {% if chose_time or time %}
-                {% if not chose_time %}
-                    <div>
-                        <label class="form-style" for="choseTime">Choose an available time:</label><br>
-                        {% for el in time %}
-                            <div class="form-check form-check-inline ms-3">
-                                <input id="choseTime" name="choseTime" class="form-check-input" type="checkbox" value="{{ el[0] }}">
-                                <label class="form-check-label" for="flexCheck">  
-                                    {{ el[1] }} 
-                                </label> 
-                            </div> 
-                        {% endfor %}
-                        <button id="submit_time" class="btn btn-primary ms-3" type="button" disabled>Choose time</button>
-                    </div>
+                    {% if not chose_time %}
+                        <div>
+                                <label class="form-style" for="choseTime">Choose an available time:</label><br>
+                                {% for el in time %}
+                                    <div class="form-check form-check-inline ms-3">
+                                        <input id="choseTime" name="choseTime" class="form-check-input" type="checkbox" value="{{ el[0] }}">
+                                        <label class="form-check-label" for="flexCheck">  
+                                            {{ el[1] }} 
+                                        </label> 
+                                    </div> 
+                                {% endfor %}
+                                <button id="submit_time" class="btn btn-primary ms-3" type="button" disabled>Choose time</button>
+                        </div>
+                    {% endif %}
                 {% endif %}
             {% endif %}
 

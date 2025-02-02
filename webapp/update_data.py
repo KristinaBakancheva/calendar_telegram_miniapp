@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from db import db_session
-from models import UserSpecialization, User, Role, UserRole, TimeSlots, Status, Events
+from models import (UserSpecialization, User, UserRole, TimeSlots, Status,
+                    Events)
 from .get_data import (get_user_by_telegram, get_list_specialization_id,
                        get_client_by_telegram)
 
@@ -112,8 +113,7 @@ def save_profile(request_form):
     db_session.commit()
 
 
-def save_timeslots(request_form, gmt, gmt_sign, telegram_id,
-                   status_active_timeslots):
+def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
     gmt = gmt.strftime("%H:%M")
     hours, minutes = map(int, gmt.split(":"))
     td = timedelta(hours=hours, minutes=minutes)
@@ -184,13 +184,24 @@ def cancel_db_event(cancel_event_id, free_cancel, approve_cancel=False):
 
 
 def delete_db_timeslot(delete_timeslot_id):
-    events = Events.query.filter(Events.slot_id == delete_timeslot_id).first()
+    cancel_status = Status.query.filter(Status.name == "cancel").first()
+    cancel_status_id = 0  # it's if we cannot find an id of cancel status
+    if cancel_status:
+        cancel_status_id = cancel_status.id
+    events = Events.query.filter((Events.slot_id == delete_timeslot_id) &
+                                 (Events.status_id != cancel_status_id)
+                                 ).first()
     if not events:
         slot = TimeSlots.query.filter(TimeSlots.id == delete_timeslot_id
                                       ).first()
         if not slot:
             return True
-        db_session.delete(slot)
+        dependence = Events.query.filter(Events.slot_id == delete_timeslot_id
+                                         ).first()
+        if dependence:
+            slot.active = False
+        else:
+            db_session.delete(slot)
         db_session.commit()
         return True
     return None
@@ -211,7 +222,7 @@ def approve_db_event(approve_event_id):
     return True
 
 
-def create_event(mentor_id, telegram_id, telegram, request, list_timeslots_id):
+def create_event(telegram_id, telegram, request, list_timeslots_id):
     client_id = get_client_by_telegram(telegram_id, telegram)
     status = Status.query.filter(Status.name == "request to mentor").first()
     if not status:
