@@ -66,7 +66,7 @@
             <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
             <input type="hidden" name="telegram" value="{{ telegram }}">
             <div class="d-flex">
-                <input class="form-control w-50" type="search" name="search-mentors" placeholder="@telegram, name or phone..."></input>
+                <input class="form-control w-auto" type="search" name="search-mentors" placeholder="@telegram, name or phone..."></input>
                 <button type="submit" name="action" value="search"><i class="bi bi-search"></i></button>
 
             </div>
@@ -99,14 +99,21 @@
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                    </table><br>
+                    </table>
                 </div>
             {% elif search_result == 'empty' %}
-                <br><h4 class="text-danger">We don't have a mentor with your words "{{ search_query[0] }}". <br>You can try searching again.</h4>
+                <br><h4 class="text-danger">We don't have a mentor with your words "{{ search_query }}". <br>You can try searching again.</h4>
             {% endif %}
-            <p class="{% if not blocked %} d-none {% endif %}"> You can't be a mentor any more. <br>If you want to change it you <br>can try to send a request to admin </p>
-            <br><button class="btn btn-primary  {% if mentor_role_id in role_id or blocked %} d-none {% endif %}" type="submit" name="action" value="registration">Became a mentor</button>
-            <button class="btn btn-primary  {% if not blocked %} d-none {% endif %}" type="submit" name="action" value="request_to_admin">Send request to admin</button>
+            <p class="{% if not blocked %} d-none {% endif %}"> You can't be a mentor any more. 
+                     <br>If you want to change it you <br>can try to send a request to admin </p>
+            <button class="btn btn-primary  {% if mentor_role_id in role_id or blocked %} d-none {% endif %}" 
+                    type="submit" name="action" value="registration">
+                Became a mentor
+            </button>
+            <button class="btn btn-primary  {% if not blocked %} d-none {% endif %}" type="submit" 
+                    name="action" value="request_to_admin">
+                Send request to admin
+            </button>
         </form>
     </body>
 </html>

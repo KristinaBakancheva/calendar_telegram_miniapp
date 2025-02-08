@@ -79,8 +79,8 @@
         </nav>
         
         <div class="container card-container">
-            <a href="{{ url_for('my_profile', telegram_id=telegram_id, telegram=telegram) }}" class="link-dark link-underline-opacity-0 profile-link
-                                                        {% if mentor_role_id not in role_id %} d-none {% endif %}">
+            <a href="{{ url_for('my_profile', telegram_id=telegram_id, telegram=telegram) }}" 
+               class="link-dark link-underline-opacity-0 profile-link {% if mentor_role_id not in role_id %} d-none {% endif %}">
                 <img src="../static/images/my_profile.jpg" class="rounded profile-img"> 
                 My profile
             </a>
@@ -88,10 +88,15 @@
                 <img src="../static/images/calendar.jpg" class="rounded profile-img"> 
                 My calendar
             </a>
-            <a href="{{ url_for('mentors', telegram_id=telegram_id, telegram=telegram) }}" class="link-dark link-underline-opacity-0 profile-link">
-                <img src="../static/images/you_got_this.jpg" class="rounded profile-img"> 
-                Mentors
-            </a>
+            <form action="{{ url_for('mentors') }}" method="post">
+                <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+                <input type="hidden" name="telegram" value="{{ telegram }}">
+                <button type="submit" class="link-dark link-underline-opacity-0 profile-link"
+                        style="border: none; background: none;">
+                    <img src="../static/images/you_got_this.jpg" class="rounded profile-img">
+                    Mentors
+                </button>
+            </form>
             <!-- not ready yet -->
             <a href="#" class="link-dark link-underline-opacity-0 profile-link {% if admin not in role_id %} d-none {% endif %}">
                 <img src="../static/images/admin.jpg" class="rounded profile-img"> 

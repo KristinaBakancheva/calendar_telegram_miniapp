@@ -69,30 +69,34 @@
             <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
             <input type="hidden" name="telegram" value="{{ telegram }}">
             <label for="name">Name:</label><br>
-            <input id="name" name="name" {% if not editing %} readonly {% endif %} value="{{ user_data.get('name') }}"></input><br>
-            <label for="gmt">Chose your time and sign:</label><br>
-            <div class="d-flex align-items-center" >
+            <input id="name" name="name" {% if not editing %} readonly 
+                    title="Press button edit for changing this field" {% endif %} value="{{ user_data.get('name') }}"></input>
+            <br><label for="gmt">Chose your time and sign:</label><br>
+            
+            <div class="d-flex align-items-center" title="Press button edit for changing this field">
                 <select name="gmt_sign" class="form-select w-auto" {% if not editing %} disabled {% endif %}>
                     <option selected>{{ user_data.get('gmt_sign') }}</option>
-                    {% if user_data.get('gmt_sign') == '-' %}
+                    {% if user_data.get('gmt_sign') == '+' %}
                         <option value="+">+</option>
                     {% endif %}
-                    {% if user_data.get('gmt_sign') != '-' %}
+                    {% if user_data.get('gmt_sign') != '+' %}
                         <option value="-">-</option>
                     {% endif %}
                 </select>
                 <input type="time" id="gmt" name="gmt" 
                        {% if not editing %} readonly {% endif %} 
                        value="{{ user_data.get('gmt') }}" 
-                       class="form-control w-auto me-2">
+                       class="form-control w-auto me-2" title="Press button edit for changing this field">
             </div>            
             <label for="telegram">Telegram:</label><br>
-            <input id="telegram" name="telegram" value="{{ user_data.get('telegram') }}" readonly></input><br>
+            <input id="telegram" name="telegram" value="{{ user_data.get('telegram') }}" readonly 
+                   title="You can edit this field only on your telegram"></input><br>
             <label for="phone">Phone:</label><br>
-            <input id="phone" name="phone" value="{{ user_data.get('phone') }}" {% if not editing %} readonly {% endif %}></input><br>
+            <input id="phone" name="phone" value="{{ user_data.get('phone') }}" {% if not editing %} readonly 
+                   title="Press button edit for changing this field" {% endif %}></input><br>
             <label for="specialization">Specialization:</label><br>
             {% for specialization in user_data.get('all_specializations') %}
-                <div class="form-check form-check-inline">
+                <div class="form-check form-check-inline" title="Press button edit for changing this field">
                     <input name="specialization" class="form-check-input" type="checkbox" value={{ specialization[1] }}
                             {% if specialization[1] in user_data.get('user_specializations_id') %}
                                                     checked{% endif %} 
@@ -103,12 +107,14 @@
                 </div>
             {% endfor %} <br>
             <label for="description">Description:</label><br>
-            <textarea id="description" name="description" {% if not editing %} readonly {% endif %}>{{ user_data.get('description') }}</textarea><br>
+            <textarea id="description" name="description" {% if not editing %} readonly 
+                      title="Press button edit for changing this field" {% endif %}>{{ user_data.get('description') }}</textarea><br>
             
             <button type="submit" name="action" value="edit" class="btn btn-primary {% if editing %} d-none {% endif %}">Edit information</button> 
             <button type="submit" name="action" value="submit" class="btn btn-primary {% if not editing %} d-none {% endif %}">Submit</button>
             <button type="submit" name="action" value="cancel" class="btn btn-primary {% if not editing %} d-none {% endif %}">Cancel</button>
-            <a href="{{  url_for('create_time_slots', telegram=telegram, telegram_id=telegram_id)  }}" class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
+            <a href="{{  url_for('create_time_slots', telegram=telegram, telegram_id=telegram_id) }}" 
+                class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
         </form>
         </body>
 </html>

@@ -13,7 +13,6 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-
         
         <title>{{ page_title }}</title>
         <style>
@@ -213,43 +212,40 @@
         
         <div class="card-header">
             <u><h3>{{ page_title }}</h3></u>
-            {% if mentor_role_id in role_id %}
-                <p>You see time in your gmt - "{{ gmt_sign }}{{ gmt }}", <br>you can chage gmt on your profile.</p>
-            {% elif gmt %}
-                <p>You see time in gmt - "{{ gmt_sign }}{{ gmt }}", <br>you can chouse gmt and I will update time.</p>
-                <form action="/my_calendar" method="GET" class="d-inline-flex">
-                    <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
-                    <input type="hidden" name="telegram" value="{{ telegram }}">
-                    <div class="d-flex align-items-center m-2">
-                        <select name="gmt_sign" class="form-select">
-                            <option value="" disabled selected>Choose + or - in your GMT:</option>
-                            <option value="+">+</option>
-                            <option value="-">-</option>
-                        </select>
-                        <input type="time" id="gmt" name="gmt" 
-                               class="form-control m-2">
-                    </div> 
-                    <button class="btn btn-success" type="submit">Choose gmt</button>
-                </form>
-            {% else %}
-                <p>You see time in UTC, you can <br>chouse gmt and I will update time.</p>
-                <form action="/my_calendar" method="GET" class="d-inline-flex">
-                    <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
-                    <input type="hidden" name="telegram" value="{{ telegram }}">
-                    <div class="d-flex align-items-center m-2">
-                        <select name="gmt_sign" class="form-select">
-                            <option value="" disabled selected>Choose + or - in your GMT:</option>
-                            <option value="+">+</option>
-                            <option value="-">-</option>
-                        </select>
-                        <input type="time" id="gmt" name="gmt" 
-                               class="form-control m-2">
-                    </div> 
-                    <button class="btn btn-success" type="submit">Choose gmt</button>
-                </form>  
-            {% endif %}
         </div>
-        <br><form class="form-group" style="padding-left: 15px;"> 
+        <form action="/my_calendar" method="GET" class="form-group form-style">
+            <label class="form-label">
+                {% if mentor_role_id in role_id %}
+                    You see time in your gmt - "{{ gmt_sign }}{{ gmt }}", <br>you can chage gmt on your profile.
+                {% else %}
+                    You see time in {% if gmt %} gmt - "{{ gmt_sign }}{{ gmt }}" {% else %} UTC {% endif %}, 
+                    <br>you can choose gmt and I will update time.
+                {% endif %}
+            </label>
+            <div class="d-flex align-items-center m-2 w-auto">
+                <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+                <input type="hidden" name="telegram" value="{{ telegram }}">
+                <select name="gmt_sign" class="form-select w-auto">
+                    <option value="{{ gmt_sign }}" {% if not gmt_sign %} disabled {% endif %} selected>
+                        {% if gmt_sign %} {{ gmt_sign }} {% else %} sign: +/- {% endif %} 
+                    </option>
+                    <option value="+">+</option>
+                    <option value="-">-</option>
+                </select>
+                <input type="time" id="gmt" name="gmt" class="form-control m-2 w-auto" value="{{ gmt }}">
+                <button class="btn btn-success" type="submit" style="white-space: nowrap;">Choose gmt</button>
+            </div> 
+            <label for="filter_date" class="form-label">Choose a date:</label>
+            <div class="d-flex mb-3 form-style w-auto" style="white-space: nowrap;">
+                <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+                <input type="hidden" name="telegram" value="{{ telegram }}">
+                <input type="date" class="form-control w-auto" id="filter_date" name="filter_date" 
+                        value="{% if filter_date %}{{ filter_date.strftime('%Y-%m-%d') }}{% endif %}">
+                <button id="filter_button" type="submit" class="btn btn-info ms-2" name="action" value="filter">the date</button>
+                <button id="filter_later_button" type="submit" class="btn btn-info ms-2" name="action" value="filter_later">after the date</button>
+                <button id="reset_button" type="submit" class="btn btn-secondary ms-2" 
+                        name="action" value="reset" {% if not filter_date %} hidden {% endif %}>reset filter</button>
+            </div>
             <div class="table table-bordered table-striped table-hover w-100">
                 <table class="table w-70">
                     <thead>
@@ -267,63 +263,73 @@
                     </thead>
                     <tbody>
                         {% for el in events_gmt %}
-                        <tr>
+                        <tr {% if today > el.get('start_date') %} class="table-secondary" {% endif %} >
                             <th scope="row"></th>
                             <td>{{ el.get('start_date') }}</td>
                             <td>{{ el.get('end_date') }}</td>
                             <td>{% if el.get('client_telegram') %} {{ el.get('client_telegram') }} {% endif %}</td>
-                            <td>{{ el.get('mentor_name') }} - {{ el.get('mentor_telegram') }}</td>
+                            <td>{{ el.get('mentor_telegram') }}</td>
                             <td>{% if el.get('request') %} {{ el.get('request') }} {% endif %}</td>
-                            <td class="fw-semibold 
-                                        {% if el.get('status_name') == 'booked'%}
-                                            text-success
-                                        {% elif el.get('status_name') == 'cancel' %}
-                                            text-danger
-                                        {% elif el.get('status_name') == 'request to mentor' %}
-                                            text-warning
-                                        {% elif not el.get('event_id') %}
-                                            text-primary
-                                        {% endif %}">
+                            <td class="fw-normal 
+                                    {% if el.get('status_name') == 'booked'%}
+                                        text-success
+                                    {% elif el.get('status_name')  and 'canceled' in el.get('status_name') %}
+                                        text-danger
+                                    {% elif el.get('status_name') == 'request to mentor' %}
+                                        text-warning
+                                    {% elif not el.get('event_id') %}
+                                        text-primary
+                                    {% endif %}">
                                 {% if el.get('event_id') %} {{ el.get('status_name') }} {% else %} available {% endif %}
                             </td>
                             <td>
+                                {% if today < el.get('start_date') %}
                                 <button class="btn btn-success {% if el.get('status_name') != 'request to mentor' or mentor_role_id not in role_id or user_id != el.get('mentor_id') %} d-none {% endif %}" 
                                 type="button"
                                 data-bs-toggle="modal"
                                 data-bs-target="#ApproveEventModal"
                                 data-event-id="{{ el.get('event_id') }}">
-                                    Approve event
+                                    Approve 
                                 </button>
-                                <button class="btn btn-success {% if el.get('status_name') != 'booked' and el.get('status_name') != 'request to mentor' %} d-none {% endif %}" 
+                                <button class="btn btn-danger {% if el.get('status_name') != 'booked' and el.get('status_name') != 'request to mentor' %} d-none {% endif %}" 
                                 type="button"
                                 data-bs-toggle="modal"
                                 data-bs-target="#CancelEventModal"
                                 data-event-id="{{ el.get('event_id') }}">
-                                    Cancel event
+                                    Cancel
                                 </button>
-                                <button class="btn btn-success {% if el.get('status_name') != 'request cancel' or mentor_role_id not in role_id or user_id != el.get('mentor_id') %} d-none {% endif %}" 
+                                <button class="btn btn-warning {% if el.get('status_name') != 'request cancel' or mentor_role_id not in role_id or user_id != el.get('mentor_id') %} d-none {% endif %}" 
                                 type="button"
                                 data-bs-toggle="modal"
                                 data-bs-target="#AcceptCancelEventModal"
                                 data-event-id="{{ el.get('event_id') }}">
-                                    Accept cancel event
+                                    Approve cancel
                                 </button>
-                                        
+                                {% endif %}     
                             </td>
                             <td>
-                                <button type="button" 
-                                class="btn btn-primary {% if user_id != el.get('mentor_id') or el.get('status_name') == 'cancel' %} d-none {% endif %} {% if el.get('event_id') %} disabled {% endif %}"
-                                data-bs-toggle="modal" 
-                                data-bs-target="#DeleteTimeslotModal" 
-                                data-slot-id="{{ el.get('timeslot_id') }}">
-                                    Delete time slot
-                                </button>
-                                
+                                {% if today < el.get('start_date') %}
+                                    <div {% if el.get('event_id') %} 
+                                    class="d-inline-block"
+                                    data-bs-placement="left"
+                                    data-bs-toggle="tooltip" 
+                                    title="You can't delete a time slot with an active event. You have to cancel it first." {% endif %}>
+                                        <button type="button" 
+                                        class="btn btn-dark {% if user_id != el.get('mentor_id') or el.get('status_name') == 'cancel' %}
+                                                            d-none {% endif %} {% if el.get('event_id') %} disabled {% endif %}"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#DeleteTimeslotModal" 
+                                        data-slot-id="{{ el.get('timeslot_id') }}">
+                                            Delete time slot
+                                        </button>
+                                    </div>
+                                {% endif %}
                             </td> 
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
         </form>
         <script>
             const cancelEventModal = document.getElementById("CancelEventModal");

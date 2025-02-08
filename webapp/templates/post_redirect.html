@@ -1,21 +1,35 @@
 <!DOCTYPE html>
 <html>
 <body>
-<form id="post_form" action="{{ url_for('book_time') }}" method="POST">
-    <input type="hidden" name="telegram" value="{{ telegram }}">
-    <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
-    <input type="hidden" name="gmt" value="{{ gmt }}">
-    <input type="hidden" name="mentor_telegram_id" value="{{ mentor_telegram_id }}">
-    <input type="hidden" name="gmt_sign" value="{{ gmt_sign }}">
-    <input type="hidden" name="date" value="{{ date }}">
-    <input type="hidden" name="time" value="{{ time }}">
-    <input type="hidden" name="chose_date" value="{{ chose_date }}">
-    <input type="hidden" name="chose_time" value="{{ chose_time }}">
-    <input type="hidden" name="successful_save" value="{{ successful_save }}">
-    <input type="hidden" name="mistake_save" value="{{ mistake_save }}">
-</form>
-<script>
-    document.getElementById("post_form").submit();
-</script>
+    <form id="post_form_book_time" action="{{ url_for('book_time') }}" method="POST">
+        <input type="hidden" name="telegram" value="{{ telegram }}">
+        <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+        <input type="hidden" name="gmt" value="{{ gmt }}">
+        <input type="hidden" name="mentor_telegram_id" value="{{ mentor_telegram_id }}">
+        <input type="hidden" name="gmt_sign" value="{{ gmt_sign }}">
+        <input type="hidden" name="date" value="{{ date }}">
+        <input type="hidden" name="time" value="{{ time }}">
+        <input type="hidden" name="chose_date" value="{{ chose_date_val }}">
+        <input type="hidden" name="chose_time" value="{{ chose_time }}">
+        <input type="hidden" name="successful_save" value="{{ successful_save }}">
+        <input type="hidden" name="mistake_save" value="{{ mistake_save }}">
+    </form>
+
+    <form id="post_form_mentors" action="{{ url_for('mentors') }}" method="POST">
+        <input type="hidden" name="telegram" value="{{ telegram }}">
+        <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+        <input type="hidden" name="search_result" value="{{ search_result }}">
+        <input type="hidden" name="search_query" value="{{ search_query }}">
+
+    </form>
+    <script>
+        let searchResult = "{{ search_result }}";
+        
+        if (searchResult) {
+            document.getElementById("post_form_mentors").submit();
+        } else {
+            document.getElementById("post_form_book_time").submit();
+        }
+    </script>
 </body>
 </html>

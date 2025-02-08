@@ -1,17 +1,18 @@
-import ast
 from datetime import datetime, timedelta
 from db import db_session
 from models import (User, Specialization, UserSpecialization, UserRole,
                     TimeSlots, Events, Status, Client)
 from sqlalchemy import func, union, literal
 
+import json
+
 
 def get_status_id(status_name):
-    status = Status.query.filter(Status.name == status_name).first()
+    status = Status.query.filter(Status.name.ilike(f"%{status_name}%")).all()
     if status:
-        return status.id
-    else:
-        return 0
+        status_id = [el.id for el in status]
+        return status_id
+    return None
 
 
 def get_all_specializations():
@@ -45,7 +46,7 @@ def get_user_by_telegram(telegram_id):
         return None  # !!!!! Как правильно обработать такую ошибку?
 
 
-def get_client_by_telegram(telegram_id, telegram):
+def get_client_by_telegram(telegram_id, telegram=None):
     """
     The function uses telegram_id and returns client_id from client table.
     """
@@ -54,15 +55,17 @@ def get_client_by_telegram(telegram_id, telegram):
     if user:
         user_id = user.id
     data = Client.query.filter(Client.telegram_id == telegram_id).first()
-    if not data:
+    if not data and telegram:
         new_client = Client(telegram_id=telegram_id, telegram=telegram,
                             user_id=user_id)
         db_session.add(new_client)
         db_session.commit()
         return new_client.id
-    elif data.user_id != user_id:
+    elif data and data.user_id != user_id:
         data.user_id = user_id
         db_session.commit()
+    elif not data and not telegram:
+        return None
     return data.id
 
 
@@ -171,10 +174,13 @@ def search_mentors(search_query, telegram_id, mentor_role_id):
     return search_result
 
 
-def get_list_dict_mentors(search_result_list_str):
-    search_result = list()
-    for search_result_str in search_result_list_str:
-        search_result.append(ast.literal_eval(search_result_str))
+def get_list_dict_mentors(search_result_str_list):
+    if not search_result_str_list:
+        return search_result_str_list
+    elif not search_result_str_list.strip():
+        return search_result_str_list.strip()
+    search_result_str = search_result_str_list.replace("'", '"')
+    search_result = json.loads(search_result_str)
     return search_result
 
 
@@ -202,7 +208,7 @@ def generate_time_list(start_time, end_time, interval_minutes):
 
 
 def get_available_slots(mentor_telegram_id, client_telegram_id=0):
-    cancel_status_id = get_status_id("cancel")
+    cancel_status_id = get_status_id("canceled")
     all_events = db_session.query(
         TimeSlots.start_date_utc.label("start_date"),
         TimeSlots.end_date_utc.label("end_date"),
@@ -235,7 +241,7 @@ def get_available_slots(mentor_telegram_id, client_telegram_id=0):
     no_events = all_events.filter(Events.id.is_(None) &
                                   (User.telegram_id == mentor_telegram_id))
     canceled_events = all_events.filter(
-                                    (Events.status_id == cancel_status_id) &
+                                    (Events.status_id.in_(cancel_status_id)) &
                                     (User.telegram_id == mentor_telegram_id)
                                         ).distinct()
     canceled_events_set = {row.timeslot_id for row in canceled_events
@@ -243,7 +249,7 @@ def get_available_slots(mentor_telegram_id, client_telegram_id=0):
     not_only_cancel = all_events.filter(
                                     (~Events.id.is_(None)) &
                                     (TimeSlots.id.in_(canceled_events_set)) &
-                                    (Events.status_id != cancel_status_id) &
+                                    (~Events.status_id.in_(cancel_status_id)) &
                                     (User.telegram_id == mentor_telegram_id))
     not_only_cancel_set = {row.timeslot_id for row in not_only_cancel}
     cancel_available_events = db_session.query(
@@ -290,7 +296,8 @@ def get_my_calendar(telegram_id):
     return events
 
 
-def get_my_calendar_gmt(events, gmt, gmt_sign):
+def get_my_calendar_gmt(events, gmt, gmt_sign, filter, filter_date):
+    events_gmt_filter = list()
     if not gmt:
         return events
     if not isinstance(gmt, str):
@@ -304,7 +311,15 @@ def get_my_calendar_gmt(events, gmt, gmt_sign):
         else:
             event["start_date"] += td
             event["end_date"] += td
-    return events
+        if not filter or filter == "reset":
+            events_gmt_filter.append(event)
+        elif filter == "filter":
+            if event["start_date"].date() == filter_date.date():
+                events_gmt_filter.append(event)
+        elif filter == "filter_later":
+            if event["start_date"] >= filter_date:
+                events_gmt_filter.append(event)
+    return events_gmt_filter
 
 
 def get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign):
