@@ -106,7 +106,7 @@
             {% endif %}
             <p class="{% if not blocked %} d-none {% endif %}"> You can't be a mentor any more. 
                      <br>If you want to change it you <br>can try to send a request to admin </p>
-            <button class="btn btn-primary  {% if mentor_role_id in role_id or blocked %} d-none {% endif %}" 
+            <button class="btn btn-primary  {% if mentor_role_id in role_id or blocked %} d-none {% endif %} mt-2" 
                     type="submit" name="action" value="registration">
                 Became a mentor
             </button>

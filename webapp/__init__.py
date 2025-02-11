@@ -7,19 +7,9 @@ from .get_data import (get_user_data, get_all_specializations, get_date_set,
                        search_mentors, get_list_dict_mentors, get_my_calendar,
                        get_my_calendar_gmt,
                        parcel_date_str, parcel_time_str)
-from .update_data import (change_data, check_username_and_update, save_profile,
-                          save_timeslots, cancel_db_event, delete_db_timeslot,
-                          approve_db_event, create_event)
-
-
-
-
-# Настройка логирования
-logging.basicConfig(
-    filename='app.log',  # Файл для логов
-    level=logging.INFO,   # Уровень логирования (можно DEBUG, WARNING, ERROR)
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+from .update_data import (action_with_event_timeslot, change_data,
+                          check_username_and_update, save_profile,
+                          save_timeslots, create_event)
 
 
 def create_app():
@@ -31,10 +21,8 @@ def create_app():
     def homepage():
         telegram_id = int(request.args.get("telegram_id"))
         telegram = request.args.get("telegram")
-        successful_creation = request.args.get("successful_creation",
-                                               "false").lower() == "true"
-        mistake_creation = request.args.get("mistake_creation",
-                                            "false").lower() == "true"
+        successful_creation = request.args.get("successful_creation") or ""
+        mistake_creation = request.args.get("mistake_creation") or ""
         user_data = get_user_data(telegram_id)
         role_id = set()
         name = None
@@ -52,11 +40,16 @@ def create_app():
     @app.route("/my_profile")
     def my_profile():
         title = "My profile"
+        logger = logging.getLogger("gunicorn.error")
+        logger.debug("starting my profile")
         telegram = request.args.get("telegram")
         telegram_id = int(request.args.get("telegram_id"))
+        logger.debug("Telegram and telegram_id collected")
+        logger.error("123")
         check_username_and_update(telegram, telegram_id)
         editing = request.args.get("editing", default=False, type=bool)
         user_data = get_user_data(telegram_id)
+        logger.debug("User data collected")
         role_id = set()
         if not user_data:
             return redirect(url_for("homepage", telegram=telegram,
@@ -90,25 +83,19 @@ def create_app():
 
     @app.route("/my_calendar")
     def my_calendar():
+        action_event = ""
+        type_modal = request.args.get("type_modal")
         title = ("My calendar:")
         today = datetime.now()
         filter_date = request.args.get("filter_date")
+        filter = request.args.get("action") or "filter_later"
         if filter_date:
             filter_date = datetime.strptime(filter_date, "%Y-%m-%d")
-            filter = request.args.get("action")
         else:
             filter_date = today
-            filter = "filter_later"
         telegram = request.args.get("telegram")
         telegram_id = int(request.args.get("telegram_id"))
-        gmt = request.args.get("gmt")
-        gmt_sign = request.args.get("gmt_sign")
-        successful_cancel = request.args.get("successful_cancel",
-                                             default=False, type=bool)
-        error_delete = request.args.get("error_delete", default=False,
-                                        type=bool)
-        error_cancel = request.args.get("error_cancel", default=False,
-                                        type=bool)
+
         successful_create = request.args.get("successful_create",
                                              default=False, type=bool)
         error_create = request.args.get("error_create", default=False,
@@ -121,15 +108,27 @@ def create_app():
             role_id = user_data.get("role_id")
             name = user_data.get("name")
         else:
+            user_id, name = None, None
+            gmt = request.args.get("gmt")
+            gmt_sign = request.args.get("gmt_sign")
             role_id = set()
-            user_id = None
-            name = None
+
+        if filter == "reset":
+            filter_date = None
+
+        event_id = request.args.get("event_id")
+        timeslot_id = request.args.get("timeslot_id")
+        (successful_approve, error_approve, successful_cancel, error_cancel,
+         successful_delete, error_delete, action_event
+         ) = action_with_event_timeslot(
+            type_modal, telegram_id, event_id, timeslot_id)
+
         events = get_my_calendar(telegram_id)
         events_gmt = get_my_calendar_gmt(events, gmt, gmt_sign, filter,
                                          filter_date)
-        if filter == "reset":
-            filter_date = None
-        return render_template("my_calendar.html", events_gmt=events_gmt,
+        return render_template("my_calendar.html", action_event=action_event,
+                               events_gmt=events_gmt,
+                               error_approve=error_approve,
                                error_cancel=error_cancel,
                                error_create=error_create,
                                error_delete=error_delete,
@@ -137,8 +136,10 @@ def create_app():
                                gmt_sign=gmt_sign, homepage=homepage_title,
                                mentor_role_id=settings_conf.MENTOR_ROLE_ID,
                                name=name, page_title=title, role_id=role_id,
+                               successful_approve=successful_approve,
                                successful_cancel=successful_cancel,
                                successful_create=successful_create,
+                               successful_delete=successful_delete,
                                telegram=telegram, telegram_id=telegram_id,
                                today=today, user_id=user_id)
 
@@ -147,10 +148,8 @@ def create_app():
         title = "Time slots"
         telegram = request.args.get("telegram")
         telegram_id = int(request.args.get("telegram_id"))
-        successful_save = request.args.get("successful_save", default=False,
-                                           type=bool)
-        mistake_save = request.args.get("mistake_save", default=False,
-                                        type=bool)
+        successful_save = request.args.get("successful_save") or ""
+        mistake_save = request.args.get("mistake_save") or ""
         user_data = get_user_data(telegram_id)
         if not user_data:
             return redirect(url_for("homepage", telegram=telegram,
@@ -224,20 +223,25 @@ def create_app():
         telegram = request.args.get("telegram")
         telegram_id = int(request.args.get("telegram_id"))
         action = request.args.get("action")
+        create_event = request.args.get("create_event")
+        search_query = request.args.get("search-mentors")
         if action == "registration":
-            return redirect(url_for("mentors_registration", telegram=telegram,
-                                    telegram_id=telegram_id))
+            title = "Mentors registration form"
+            all_specializations = get_all_specializations()
+            return render_template("mentors_registration.html",
+                                   all_specializations=all_specializations,
+                                   homepage=homepage_title, page_title=title,
+                                   role_id=settings_conf.MENTOR_ROLE_ID,
+                                   telegram=telegram, telegram_id=telegram_id)
         elif action == "request_to_admin":
             pass
             return redirect(url_for("homepage", telegram=telegram,
                                     telegram_id=telegram_id))
-        create_event = request.args.get("create_event")
-        if create_event:
+        elif create_event:
             return render_template("post_redirect.html",
                                    mentor_telegram_id=create_event,
                                    telegram=telegram, telegram_id=telegram_id)
-        search_query = request.args.get("search-mentors")
-        if not search_query:
+        elif not search_query:
             return render_template("post_redirect.html",
                                    search_result=" ",
                                    search_query=" ",
@@ -254,74 +258,24 @@ def create_app():
         return redirect(url_for("homepage", telegram=telegram,
                                 telegram_id=telegram_id))
 
-    @app.route("/mentors/mentors_registration")
-    def mentors_registration():
-        title = "Mentors registration form"
-        telegram = request.args.get("telegram")
-        telegram_id = int(request.args.get("telegram_id"))
-        all_specializations = get_all_specializations()
-        return render_template("mentors_registration.html",
-                               all_specializations=all_specializations,
-                               homepage=homepage_title, page_title=title,
-                               role_id=settings_conf.MENTOR_ROLE_ID,
-                               telegram=telegram, telegram_id=telegram_id)
-
     @app.route("/mentors/mentors_registration", methods=["POST"])
     def create_profile():
-        request_form = request.form
-        save_profile(request_form)
+        telegram_id = int(request.form.get("telegram_id"))
+        telegram = request.form.get("telegram")
+        mentor_role_id = int(request.form.get("role_id"))
+        save_profile(request.form)
         user_db = get_user_data(telegram_id)
         if user_db:
             role_id = user_db.get("role_id")
             if mentor_role_id in role_id:
-                return redirect(url_for("homepage", successful_creation=True))
-        return redirect(url_for("homepage", mistake_creation=True))
-
-    @app.route("/cancel_event", methods=["POST"])
-    def cancel_event():
-        telegram_id = int(request.form.get("telegram_id"))
-        telegram = request.form.get("telegram")
-        approve = False
-        cancel_event_id = request.form.get("event_id")
-        cancel_event_id_approve = request.form.get("event_id_approve")
-        if cancel_event_id_approve:
-            cancel_event_id = cancel_event_id_approve
-            approve = True
-        result_delete = cancel_db_event(cancel_event_id,
-                                        settings_conf.FREE_CANCEL_HOURS,
-                                        telegram_id, approve)
-        if result_delete:
-            return redirect(url_for("my_calendar", successful_cancel=True,
-                                    telegram=telegram, telegram_id=telegram_id))
-        return redirect(url_for("my_calendar", error_cancel=True,
-                                telegram=telegram, telegram_id=telegram_id))
-
-    @app.route("/approve_event", methods=["POST"])
-    def approve_event():
-        telegram_id = int(request.form.get("telegram_id"))
-        telegram = request.form.get("telegram")
-        approve_event_id = request.form.get("event_id")
-        result_approve = approve_db_event(approve_event_id)
-        if result_approve:
-            return redirect(url_for("my_calendar", successful_approve=True,
-                                    telegram=telegram, telegram_id=telegram_id))
-        return redirect(url_for("my_calendar", error_approve=True,
-                                telegram=telegram, telegram_id=telegram_id))
-
-    @app.route("/delete_timeslot", methods=["POST"])
-    def delete_timeslot():
-        telegram_id = int(request.form.get("telegram_id"))
-        telegram = request.form.get("telegram")
-        delete_timeslot_id = request.form.get("slot_id")
-        result_delete, error = delete_db_timeslot(delete_timeslot_id)
-        logging.error("Error in __init__ - delete_timeslot() with mistake"
-                     f" - {error} ")
-        if result_delete:
-            return redirect(url_for("my_calendar", successful_delete=True,
-                                    telegram=telegram, telegram_id=telegram_id)
-                            )
-        return redirect(url_for("my_calendar", error_delete=True,
-                                telegram=telegram, telegram_id=telegram_id))
+                print("----**888888*8*")
+                return redirect(url_for("homepage", mistake_creation="",
+                                        successful_creation=True,
+                                        telegram=telegram,
+                                        telegram_id=telegram_id))
+        return redirect(url_for("homepage", mistake_creation=True,
+                                successful_creation="", telegram=telegram,
+                                telegram_id=telegram_id))
 
     @app.route("/mentors/mentors_search/book_time", methods=["POST"])
     def book_time():
@@ -348,9 +302,9 @@ def create_app():
             time = parcel_time_str(time)
         mentor_data = get_user_data(mentor_telegram_id)
         return render_template("booking_mentor.html",
-                               chose_date_val=chose_date_val, chose_time=chose_time,
-                               date=date, gmt=gmt, gmt_sign=gmt_sign,
-                               homepage=homepage_title,
+                               chose_date_val=chose_date_val,
+                               chose_time=chose_time, date=date, gmt=gmt,
+                               gmt_sign=gmt_sign, homepage=homepage_title,
                                mentor_data=mentor_data,
                                mentor_role_id=settings_conf.MENTOR_ROLE_ID,
                                name=name, page_title=title, role_id=role_id,
@@ -410,5 +364,6 @@ def create_app():
         return render_template("request_to_admin.html", page_title=title)
 
     return app
+
 
 app = create_app()

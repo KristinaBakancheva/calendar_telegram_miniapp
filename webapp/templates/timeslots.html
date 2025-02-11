@@ -52,19 +52,23 @@
         </style>
     </head>
     <body>
-        {% if successful_save %}
-        <div class="alert alert-success" role="alert">
-            We save your time slots for this day, <br>
-            you can choose new day and new time slots
-        </div>
-        {% endif %}
-
-        {% if mistake_save %}
-        <div class="alert alert-danger" role="alert">
-            We can't save your time slots, <br>
-            try again or write our admin a request.
-        </div>
-        {% endif %}
+        <div id="liveToast" class="toast position-fixed top-50 start-50 translate-middle" role="alert" 
+             aria-atomic="true" data-action="{{ successful_save }}{{ mistake_save }}">
+            <div class="toast-header">
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+            {% if successful_save %}
+                <div class="toast-body text-white bg-success">
+                    We save your time slots for this day, <br>
+                    you can choose new day and new time slots
+                </div>
+            {% elif mistake_save %}
+                <div class="toast-body text-white bg-danger">
+                    We can't save your time slots, <br>
+                    try again or write our admin a request.
+                </div>
+            {% endif %}
+        </div> 
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
@@ -98,8 +102,15 @@
                 <button id="save_button" class="btn btn-primary" name="action" value="create">Save</button>
             </div>
         </form>
-
         <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const toastEl = document.getElementById("liveToast");
+                const actionEvent = toastEl ? toastEl.getAttribute("data-action") : null;
+                if (actionEvent && actionEvent.trim() !== "") {
+                    var toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                }
+            });
             document.getElementById('date_picker').addEventListener('change', function () {
                 const secondFieldContainer = document.getElementById('time_picker');
                 if (this.value) {

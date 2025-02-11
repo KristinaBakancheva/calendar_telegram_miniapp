@@ -4,6 +4,7 @@ from models import (UserSpecialization, User, UserRole, TimeSlots, Status,
                     Events)
 from .get_data import (get_user_by_telegram, get_list_specialization_id,
                        get_client_by_telegram, get_status_id)
+from webapp import settings_conf
 
 
 def check_username_and_update(telegram_username, telegram_id):
@@ -146,7 +147,8 @@ def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
 
 def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
                     approve_cancel=False):
-    request_mentor_status = Status.query.filter(Status.name.ilike("%request%mentor%")).first()
+    request_mentor_status = Status.query.filter(Status.name.ilike(
+        "%request%mentor%")).first()
     request_cancel_status_id = None
     if request_mentor_status:
         request_cancel_status_id = request_mentor_status.id
@@ -167,7 +169,7 @@ def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
                                         ).filter((Events.id == cancel_event_id)
                                                  ).first()
     if not event_slot:
-        return None
+        return False, "We can't find this event"
     date_slot = event_slot[4]
     difference = date_slot - today
     sec_dif = difference.total_seconds()
@@ -182,17 +184,17 @@ def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
             cancel_status = Status.query.filter(Status.name.ilike(
                 "%canceled%mentor")).first()
         if not cancel_status:
-            return None
+            return False, "We can't find a 'canceled' by mentor/client status"
         event.status_id = cancel_status.id
     else:
         request_cancel_status = Status.query.filter(
                                             Status.name == "request cancel"
                                                     ).first()
         if request_cancel_status:
-            return None
+            return False, "We can't find a 'request cancel' status"
         event.status_id = request_cancel_status.id
     db_session.commit()
-    return True
+    return True, None
 
 
 def delete_db_timeslot(delete_timeslot_id):
@@ -206,8 +208,6 @@ def delete_db_timeslot(delete_timeslot_id):
                                   ).first()
     if not slot:
         return True, None
-    elif not events:
-        return True, None
     elif events:
         slot.active = False
     else:
@@ -218,17 +218,18 @@ def delete_db_timeslot(delete_timeslot_id):
 
 def approve_db_event(approve_event_id):
     booked_status = Status.query.filter(Status.name == "booked").first()
-    request_status = Status.query.filter(Status.name == "request to mentor").first()
+    request_status = Status.query.filter(Status.name == "request to mentor"
+                                         ).first()
     if not booked_status or not request_status:
-        return None
+        return False, "We can't find 'booked' status or 'request to mentor"
     event = Events.query.filter((Events.id == approve_event_id) &
                                 (Events.status_id == request_status.id)
                                 ).first()
     if not event:
-        return None
+        return False, "We can't find this event"
     event.status_id = booked_status.id
     db_session.commit()
-    return True
+    return True, None
 
 
 def create_event(telegram_id, telegram, request, list_timeslots_id):
@@ -244,3 +245,44 @@ def create_event(telegram_id, telegram, request, list_timeslots_id):
     if new_event.id:
         return True
     return False
+
+
+def action_with_event_timeslot(type_modal, telegram_id, event_id, timeslot_id):
+    successful_approve = False
+    error_approve = False
+    successful_cancel = False
+    error_cancel = False
+    successful_delete = False
+    error_delete = False
+    action = ""
+    if type_modal == "approve_event":
+        result_approve, error = approve_db_event(event_id)
+        if result_approve:
+            successful_approve = True
+            action = "success"
+        else:
+            error_approve = error
+            action = "error"
+    elif type_modal == "cancel_event" or type_modal == "approve_cancel_event":
+        approve = False
+        if type_modal == "approve_cancel_event":
+            approve = True
+        result_delete, error = cancel_db_event(event_id,
+                                               settings_conf.FREE_CANCEL_HOURS,
+                                               telegram_id, approve)
+        if result_delete:
+            successful_cancel = True
+            action = "success"
+        else:
+            error_cancel = error
+            action = "error"
+    elif type_modal == "delete_time_slot":
+        result_delete, error = delete_db_timeslot(timeslot_id)
+        if result_delete:
+            successful_delete = True
+            action = "success"
+        else:
+            error_delete = error
+            action = "error"
+    return (successful_approve, error_approve, successful_cancel, error_cancel,
+            successful_delete, error_delete, action)

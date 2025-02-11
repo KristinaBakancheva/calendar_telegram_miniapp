@@ -52,22 +52,25 @@
         </style>
     </head>
     <body>
-
-        {% if successful_creation %}
-        <div class="alert alert-success" role="alert">
-            Your profile was successfully created.<br>
-            You can change data or choose your <br>
-            avalible times in your profile 
-        </div>
-        {% endif %}
-
-        {% if mistake_creation %}
-        <div class="alert alert-danger" role="alert">
-            We can't create your profile <br>
-            like mentor. You can try again <br>
-            or write our admin a request.
-        </div>
-        {% endif %}
+        <div id="liveToast" class="toast position-fixed top-50 start-50 translate-middle" role="alert" 
+             aria-atomic="true" data-action="{{ successful_creation }}{{ mistake_creation }}">
+            <div class="toast-header">
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+            </div>
+            {% if successful_creation %}
+                <div class="toast-body text-white bg-success">
+                    Your profile was successfully created.<br>
+                    You can change data or choose your <br>
+                    avalible times in your profile 
+                </div>
+            {% elif mistake_creation %}
+                <div class="toast-body text-white bg-danger">
+                    We can't create your profile <br>
+                    like mentor. You can try again <br>
+                    or write our admin a request.
+                </div>
+            {% endif %}
+        </div> 
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
@@ -104,4 +107,14 @@
             </a>
         </div>
     </body>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const toastEl = document.getElementById("liveToast");
+            const actionEvent = toastEl ? toastEl.getAttribute("data-action") : null;
+            if (actionEvent && actionEvent.trim() !== "") {
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+        });
+    </script>
 </html>
