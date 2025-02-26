@@ -33,7 +33,7 @@
                 margin: 0 auto;
             }
             body {
-                background-image: url("../static/images/mentors.jpg");
+                background-image:  url("{{ url_for('static', filename='images/mentors.jpg') }}");
                 background-size: cover;
                 background-position: center center;
                 background-attachment: fixed;
@@ -52,23 +52,10 @@
         </style>
     </head>
     <body>
-        {% if successful_save == 'true' %}
-        <div class="alert alert-success" role="alert">
-            We save your time slots for this day, <br>
-            you can choose new day and new time slots
-        </div>
-        {% endif %}
-
-        {% if mistake_save == 'true' %}
-        <div class="alert alert-danger" role="alert">
-            We can't save your time slots, <br>
-            try again or write our admin a request.
-        </div>
-        {% endif %}
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
-                <a href="{{  url_for('homepage')  }}" class="navbar-brand" >{{ homepage }}</a>
+                <a href="{{  url_for('homepage', telegram=telegram, telegram_id=telegram_id)  }}" class="navbar-brand" >{{ homepage }}</a>
             </ul>
             {% if mentor_role_id in role_id %}
                 <h3 class="text-end ms-auto m-2">Hi, {{ name }}</h3>
@@ -79,87 +66,110 @@
             <u><h4>{{ page_title }}</h4></u>
         </div>
         <form class="form-style" action="{{ url_for('find_timslots') }}" method="GET">
+            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+            <input type="hidden" name="telegram" value="{{ telegram }}">
             <h5 class="ms-3">You chose a mentor - {{ mentor_data.telegram }}:</h5>
             <div class="text-danger-emphasis ms-3">if it's incorrect - try again or write to admin.</div>
             <input name="mentor_telegram_id" class="form-control" type="text" value="{{ mentor_data.telegram_id }}" hidden>
             <input name="mentor_id" class="form-control" type="text" value="{{ mentor_data.id }}" hidden>
-            {% if not gmt %}
-                <div class="ms-3">Choose your gmt:</div>
-                <div class="d-flex align-items-center m-2 mt-0">
-                    <select id="gmt_sign" name="gmt_sign" class="form-select mt-0" style="width: auto;" required>
-                        <option value="" disabled selected> choose </option>
-                        <option value="+">+</option>
-                        <option value="-">-</option>
-                    </select>
-                    <input type="time" id="gmt" name="gmt" style="width: auto;" 
-                    class="form-control m-2" required>
-                </div> 
-                <button id="submit_gmt" class="btn btn-success ms-3" type="submit" name="chose" value="chose_gmt" disabled>Submit</button>
-            {% else %}
-                <div class="d-flex align-items-center m-2 mt-0">
-                    <div class="ms-3">Your gmt:</div>
-                    <select id="gmt_sign" name="gmt_sign" class="form-select ms-2 mt-0" style="width: auto;" disabled>
-                        <option value="{{ gmt_sign }}">{{ gmt_sign }}</option>
-                    </select>
-                    <input type="time" id="gmt" name="gmt" style="width: auto;" 
-                    class="form-control m-2" value="{{ gmt }}" disabled>
-
-                    <input name="gmt_sign" class="form-control" type="text" value="{{ gmt_sign }}" hidden>
-                    <input name="gmt" class="form-control" type="text" value="{{ gmt }}" hidden>
-                </div>
-            {% endif %}
-            {% if chose_date or date %}
-                {% if not chose_date %}
-                    <div class="align-items-center" >
-                        <label class="form-style" for="time_slot">Choose an available date:</label>
-                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" required>
-                            <option value="" disabled selected>date: </option>
+            
+            <div class="ms-3">Your gmt:</div>
+            <div class="d-flex align-items-center m-2 mt-0">
+                <select id="gmt_sign" name="gmt_sign" class="form-select mt-0" style="width: auto;">
+                    <option value="{{ gmt_sign }}" disabled selected> {% if gmt_sign %} {{ gmt_sign }} {% else %} choose {% endif %}</option>
+                    <option value="+">+</option>
+                    <option value="-">-</option>
+                </select>
+                <input type="time" id="gmt" value="{{ gmt }}" name="gmt" style="width: auto;" class="form-control m-2">
+                <input id="gmt_sign" value="{{ gmt_sign }}" name="gmt_sign" hidden>
+            </div> 
+            <button id="submit_gmt" class="btn btn-primary ms-3" type="submit" name="chose" value="chose_gmt" disabled>Submit gmt</button>
+            
+            <div id="date_form" hidden>
+                {% if not chose_date_val and not date %}
+                    <div class="text-danger ms-3">This mentor does not have <br>an available date now. <br>You should check it later</div>
+                {% else %}
+                    <label class="form-style" for="time_slot">Choose an available date:</label>
+                    <div class="d-flex align-items-center">
+                        <select id="chose_date" name="chose_date" class="form-select m-2" style="width: auto;">
+                            <option value="{{ chose_date_val }}" disabled selected> 
+                                {% if chose_date_val %} {{ chose_date_val }} {% else %} date: {% endif %}
+                            </option>
                             {% for el in date %}
                                 <option value="{{ el }}">{{ el }}</option>
                             {% endfor %}
                         </select>
-                        <button id="submit_date" class="btn btn-success ms-3" name="chose" type="submit" value="chose_date" disabled>Choose date</button>
-                    </div>
-                {% else %}
-                    <div class="d-flex align-items-center m-2 mt-0">
-                        <div class="ms-3">Your date: </div>
-                        <select id="choseDate" name="choseDate" class="form-select m-2" style="width: auto;" disabled>
-                            <option value="{{ chose_date }}">{{ chose_date }}</option>
-                        </select>
+                        <input id="chose_date" value="{{ chose_date_val }}" name="chose_date" hidden>
+                        <button id="submit_date" class="btn btn-primary ms-3" name="chose" type="submit" value="chose_date" disabled>Choose date</button>
+                        <button id="edit_date" class="btn btn-success ms-3" name="chose" type="submit" value="edit_date" hidden>Edit date</button>
                     </div>
                 {% endif %}
-            {% else %}
-                <div class="ms-3">The mentor does not have <br>an available date now. <br>You should check it later</div>  
-            {% endif %}
+            </div>
 
-            {% if chose_time or time %}
-                {% if not chose_time %}
-                    <div>
-                        <label class="form-style" for="choseTime">Choose an available time:</label><br>
-                        {% for el in time %}
-                            <div class="form-check form-check-inline ms-3">
-                                <input id="choseTime" name="choseTime" class="form-check-input" type="checkbox" value="{{ el[0] }}">
-                                <label class="form-check-label" for="flexCheck">  
-                                    {{ el[1] }} 
-                                </label> 
-                            </div> 
-                        {% endfor %}
-                        <button id="submit_time" class="btn btn-primary ms-3" type="button" disabled>Choose time</button>
-                    </div>
-                {% endif %}
-            {% endif %}
-
-            <div id="description" hidden>
-                <label for="descriptionI">Your request is:</label><br>
-                <textarea id="descriptionI" name="descriptionI" 
+            <div id="time_form" hidden>
+                <label class="form-style" for="chose_time">Choose an available time:</label><br>
+                {% for el in time %}
+                    <div class="form-check ms-3">
+                        <input id="chose_time" name="chose_time" class="form-check-input" type="checkbox" value="{{ el[0] }}">
+                        <label class="form-check-label" for="flexCheck">  
+                            {{ el[1] }} 
+                        </label> 
+                    </div> 
+                {% endfor %}
+                <button id="submit_time" name="submit_time" class="btn btn-primary ms-3 mt-2" type="button" disabled>Choose time</button>
+                <button id="edit_time" class="btn btn-success ms-3 mt-2" name="chose" type="submit" value="edit_time" hidden>Edit time</button>
+            </div>
+            
+            <div id="description_form" hidden>
+                <label class="form-style mt-2" for="description">Your request is:</label><br>
+                <textarea id="description" name="description" 
                        class="form-control form-control-sm input-stile" 
                        type="text" style="width: auto;"></textarea>
-                <br><button id="createBooking" name="createBooking" value="Booking" type="submit" class="btn btn-primary ms-3" disabled>Complete booking</button> 
+                <button id="create_booking" name="create_booking" value="booking" 
+                        type="submit" class="btn btn-primary ms-3 mt-2" disabled>Complete booking</button> 
             </div>
 
         </form>
 
         <script>
+            // .document is a built-in JavaScript object that represents the HTML document loaded in the browser. 
+            // It allows you to access and interact with elements on the page.
+            function openForm () {
+                const gmtsign = document.getElementById('gmt_sign');
+                const gmt = document.getElementById('gmt');
+                const dateForm = document.getElementById('date_form');
+                const buttonSubmitGMT = document.getElementById('submit_gmt');
+                const chosedate = document.getElementById('chose_date');
+                const buttonsubmitDate = document.getElementById('submit_date');
+                const buttoneditDate = document.getElementById('edit_date')
+                const timeForm = document.getElementById('time_form')
+                if (gmtsign.value && gmt.value) {
+                    dateForm.removeAttribute('hidden');
+                    buttonSubmitGMT.setAttribute('hidden', true);
+                    gmtsign.style.pointerEvents = "none";
+                    gmt.style.pointerEvents = "none";
+                }
+                if (chosedate.value) {
+                    buttoneditDate.removeAttribute('hidden');
+                    buttonsubmitDate.setAttribute('hidden', true);
+                    timeForm.removeAttribute('hidden')
+                }
+
+                
+                // else{
+                //     dateform.setAttribute('hidden', true);
+                //     buttonSubmitGMT.removeAttribute('hidden');
+                //     gmtsign.style.pointerEvents = "auto";
+                //     gmt.style.pointerEvents = "auto";
+                //     buttonsubmitDate.removeAttribute('hidden');
+                //     buttoneditDate.setAttribute('hidden', true);
+                // }
+                const checkboxes = document.querySelectorAll('input[name="chose_time"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener("change", openSubmitTime);
+                });
+            }
+
             function openSubmitGMT() {
                 const gmtsignValue = document.getElementById('gmt_sign').value;
                 const gmtValue = document.getElementById('gmt').value;
@@ -172,7 +182,7 @@
             }
 
             function openChooseDate(){
-                const choseDate = document.getElementById('choseDate').value;
+                const choseDate = document.getElementById('chose_date').value;
                 const buttonChooseDate = document.getElementById('submit_date');
                 if (choseDate) {
                     buttonChooseDate.removeAttribute('disabled');
@@ -181,63 +191,56 @@
                 }
             }
 
-            function openChooseTime(){
-                const choseTime = document.getElementById('choseTime').value;
+            function openSubmitTime(){
+                const checkboxChoseTime = document.querySelectorAll('input[name="chose_time"]:checked');
                 const buttonChooseTime = document.getElementById('submit_time');
-                if (choseTime) {
+                if (checkboxChoseTime.length > 0) {
                     buttonChooseTime.removeAttribute('disabled');
                 }else {
                     buttonChooseTime.setAttribute('disabled', true);
                 }
             }
 
-            function openRequestDescription(){
+            function openDescriptionForm() {
                 const buttonChooseTime = document.getElementById('submit_time');
-                const requestText = document.getElementById('description');
-                const requestTextI = document.getElementById('descriptionI');
-                if (buttonChooseTime) {
-                    requestText.removeAttribute('hidden');
-                    requestTextI.setAttribute('required', '')
+                const descriptionForm = document.getElementById('description_form')
+                const buttoneditTime = document.getElementById('edit_time')
+                const checkboxChoseTime = document.querySelectorAll('input[name="chose_time"]');
+
+                if (buttonChooseTime && buttonChooseTime.disabled === false) {
+                    descriptionForm.removeAttribute('hidden');
+                    buttonChooseTime.setAttribute('hidden', true);
+                    buttoneditTime.removeAttribute('hidden');
+                    checkboxChoseTime.forEach(checkbox => {
+                        checkbox.style.pointerEvents = "none";
+                    });
                 }else {
-                    requestText.setAttribute('hidden', true);
-                    requestTextI.removeAttribute('required')
+                    descriptionForm.setAttribute('hidden', true);
+                    buttonChooseTime.removeAttribute('hidden');
+                    buttoneditTime.setAttribute('hidden', true);
+                    checkboxChoseTime.forEach(checkbox => {
+                        checkbox.style.pointerEvents = "auto";
+                    });
                 }
             }
-           
+
             function openBookingButtom(){
-                const descriptionI = document.getElementById('descriptionI');
-                const createBookingButtom = document.getElementById('createBooking');
+                const descriptionI = document.getElementById('description');
+                const create_bookingButtom = document.getElementById('create_booking');
                 if (descriptionI.value.trim() !== '') {
-                    createBookingButtom.removeAttribute('disabled');
+                    create_bookingButtom.removeAttribute('disabled');
                 }else {
-                    createBookingButtom.setAttribute('disabled', true);
+                    create_bookingButtom.setAttribute('disabled', true);
                 }
             }
-        
-            // Добавляем обработчики для обоих полей
+
+            document.addEventListener('DOMContentLoaded', openForm);
             document.getElementById('gmt_sign').addEventListener('change', openSubmitGMT);
             document.getElementById('gmt').addEventListener('input', openSubmitGMT);
-            
-            document.getElementById('choseDate').addEventListener('change', openChooseDate);
-            document.getElementById('choseTime').addEventListener('change', openChooseTime);
+            document.getElementById('chose_date').addEventListener('change', openChooseDate);
+            document.getElementById('submit_time').addEventListener('click', openDescriptionForm);
+            document.getElementById('description').addEventListener('input', openBookingButtom);
 
-            document.getElementById('submit_time').addEventListener('click', openRequestDescription);
-            
-            document.getElementById('descriptionI').addEventListener('input', openBookingButtom);
-
-            document.addEventListener("DOMContentLoaded", () => {
-            const checkboxes = document.querySelectorAll('input[name="choseTime"]');
-            const submitButton = document.getElementById("createBooking");
-
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener("change", () => {
-                    // Проверяем, выбран ли хотя бы один чекбокс
-                    const isAnyChecked = Array.from(checkboxes).some(cb => cb.checked);
-                    submitButton.disabled = !isAnyChecked; // Активируем кнопку, если есть выбор
-                    });
-                });
-            });
-            
         </script>
         </body>
 </html>

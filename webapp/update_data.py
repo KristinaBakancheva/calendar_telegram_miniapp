@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from db import db_session
-from models import UserSpecialization, User, Role, UserRole, TimeSlots, Status, Events
+from models import (UserSpecialization, User, UserRole, TimeSlots, Status,
+                    Events)
 from .get_data import (get_user_by_telegram, get_list_specialization_id,
-                       get_client_by_telegram)
+                       get_client_by_telegram, get_status_id)
+from webapp import settings_conf
 
 
 def check_username_and_update(telegram_username, telegram_id):
@@ -112,8 +114,7 @@ def save_profile(request_form):
     db_session.commit()
 
 
-def save_timeslots(request_form, gmt, gmt_sign, telegram_id,
-                   status_active_timeslots):
+def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
     gmt = gmt.strftime("%H:%M")
     hours, minutes = map(int, gmt.split(":"))
     td = timedelta(hours=hours, minutes=minutes)
@@ -144,74 +145,94 @@ def save_timeslots(request_form, gmt, gmt_sign, telegram_id,
     return None
 
 
-def cancel_db_event(cancel_event_id, free_cancel, approve_cancel=False):
+def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
+                    approve_cancel=False):
+    request_mentor_status = Status.query.filter(Status.name.ilike(
+        "%request%mentor%")).first()
+    request_cancel_status_id = None
+    if request_mentor_status:
+        request_cancel_status_id = request_mentor_status.id
     today = datetime.now()
-    cancel_status = Status.query.filter(Status.name == "cancel").first()
-    cancel_status_id = 0  # it's if we cannot find an id of cancel status
-    if cancel_status:
-        cancel_status_id = cancel_status.id
-    table = db_session.query(Events.id,
-                             Events.slot_id,
-                             Events.status_id,
-                             TimeSlots.id,
-                             TimeSlots.start_date_utc
-                             ).join(TimeSlots, TimeSlots.id == Events.slot_id
-                                    ).filter(
-                                        (Events.id == cancel_event_id) &
-                                        ((Events.status_id == None) |
-                                         (Events.status_id != cancel_status_id)
-                                         )).first()
-    if not table:
-        return None
-    date_slot = table[4]
+    user_db = get_user_by_telegram(telegram_id)
+    user_id = None
+    if user_db:
+        user_id = user_db.id
+    client_id = get_client_by_telegram(telegram_id)
+    event_slot = db_session.query(Events.id,
+                                  Events.slot_id,
+                                  Events.status_id,
+                                  TimeSlots.id,
+                                  TimeSlots.start_date_utc,
+                                  TimeSlots.user_id
+                                  ).join(
+                                    TimeSlots, TimeSlots.id == Events.slot_id
+                                        ).filter((Events.id == cancel_event_id)
+                                                 ).first()
+    if not event_slot:
+        return False, "We can't find this event"
+    date_slot = event_slot[4]
     difference = date_slot - today
     sec_dif = difference.total_seconds()
     hour_dif = sec_dif/3600
-    if approve_cancel or hour_dif > free_cancel:
-        event = Events.query.filter(Events.id == table[0]).first()
+    if (approve_cancel or hour_dif > free_cancel or user_id == event_slot[5] or
+       event_slot[2] == request_cancel_status_id):
+        event = Events.query.filter(Events.id == cancel_event_id).first()
+        if client_id == event.client_id:
+            cancel_status = Status.query.filter(Status.name.ilike(
+                "%canceled%client")).first()
+        else:
+            cancel_status = Status.query.filter(Status.name.ilike(
+                "%canceled%mentor")).first()
         if not cancel_status:
-            return None
+            return False, "We can't find a 'canceled' by mentor/client status"
         event.status_id = cancel_status.id
     else:
         request_cancel_status = Status.query.filter(
                                             Status.name == "request cancel"
                                                     ).first()
         if request_cancel_status:
-            return None
+            return False, "We can't find a 'request cancel' status"
         event.status_id = request_cancel_status.id
     db_session.commit()
-    return True
+    return True, None
 
 
 def delete_db_timeslot(delete_timeslot_id):
-    events = Events.query.filter(Events.slot_id == delete_timeslot_id).first()
-    if not events:
-        slot = TimeSlots.query.filter(TimeSlots.id == delete_timeslot_id
-                                      ).first()
-        if not slot:
-            return True
+    all_cancel_status = get_status_id("canceled")
+    if not all_cancel_status:
+        return False, "We don't have status 'canceled'"
+    events = Events.query.filter((Events.slot_id == delete_timeslot_id) &
+                                 (Events.status_id.in_(all_cancel_status))
+                                 ).first()
+    slot = TimeSlots.query.filter(TimeSlots.id == delete_timeslot_id
+                                  ).first()
+    if not slot:
+        return True, None
+    elif events:
+        slot.active = False
+    else:
         db_session.delete(slot)
-        db_session.commit()
-        return True
-    return None
+    db_session.commit()
+    return True, None
 
 
 def approve_db_event(approve_event_id):
     booked_status = Status.query.filter(Status.name == "booked").first()
-    request_status = Status.query.filter(Status.name == "request to mentor").first()
+    request_status = Status.query.filter(Status.name == "request to mentor"
+                                         ).first()
     if not booked_status or not request_status:
-        return None
+        return False, "We can't find 'booked' status or 'request to mentor"
     event = Events.query.filter((Events.id == approve_event_id) &
                                 (Events.status_id == request_status.id)
                                 ).first()
     if not event:
-        return None
+        return False, "We can't find this event"
     event.status_id = booked_status.id
     db_session.commit()
-    return True
+    return True, None
 
 
-def create_event(mentor_id, telegram_id, telegram, request, list_timeslots_id):
+def create_event(telegram_id, telegram, request, list_timeslots_id):
     client_id = get_client_by_telegram(telegram_id, telegram)
     status = Status.query.filter(Status.name == "request to mentor").first()
     if not status:
@@ -224,3 +245,44 @@ def create_event(mentor_id, telegram_id, telegram, request, list_timeslots_id):
     if new_event.id:
         return True
     return False
+
+
+def action_with_event_timeslot(type_modal, telegram_id, event_id, timeslot_id):
+    successful_approve = False
+    error_approve = False
+    successful_cancel = False
+    error_cancel = False
+    successful_delete = False
+    error_delete = False
+    action = ""
+    if type_modal == "approve_event":
+        result_approve, error = approve_db_event(event_id)
+        if result_approve:
+            successful_approve = True
+            action = "success"
+        else:
+            error_approve = error
+            action = "error"
+    elif type_modal == "cancel_event" or type_modal == "approve_cancel_event":
+        approve = False
+        if type_modal == "approve_cancel_event":
+            approve = True
+        result_delete, error = cancel_db_event(event_id,
+                                               settings_conf.FREE_CANCEL_HOURS,
+                                               telegram_id, approve)
+        if result_delete:
+            successful_cancel = True
+            action = "success"
+        else:
+            error_cancel = error
+            action = "error"
+    elif type_modal == "delete_time_slot":
+        result_delete, error = delete_db_timeslot(timeslot_id)
+        if result_delete:
+            successful_delete = True
+            action = "success"
+        else:
+            error_delete = error
+            action = "error"
+    return (successful_approve, error_approve, successful_cancel, error_cancel,
+            successful_delete, error_delete, action)

@@ -4,3 +4,5 @@ my files/
 settings.py
 for_next_steps/
 test_data.sql
+*.log
+.secrets/
