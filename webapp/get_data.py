@@ -1,13 +1,17 @@
 from datetime import datetime, timedelta
 from db import db_session
-from models import (User, Specialization, UserSpecialization, UserRole,
-                    TimeSlots, Events, Status, Client)
+from webapp.calendar.models import Client, Events, Status, TimeSlots
+from webapp.profile.models import (Specialization,
+                                   UserSpecialization, User, UserRole)
 from sqlalchemy import func, union, literal
 
 import json
 
 
 def get_status_id(status_name):
+    """
+    The function returns id using status_name
+    """
     status = Status.query.filter(Status.name.ilike(f"%{status_name}%")).all()
     if status:
         status_id = [el.id for el in status]
@@ -20,7 +24,6 @@ def get_all_specializations():
     The function returns list of pair name and id of all specializations
     from database
     """
-
     all_specializations = list()
     for specialization in Specialization.query.all():
         if (
@@ -43,7 +46,7 @@ def get_user_by_telegram(telegram_id):
     if data:
         return data
     else:
-        return None  # !!!!! Как правильно обработать такую ошибку?
+        return None  
 
 
 def get_client_by_telegram(telegram_id, telegram=None):
@@ -115,6 +118,9 @@ def get_user_data(telegram_id):
 
 
 def search_mentors(search_query, telegram_id, mentor_role_id):
+    """
+    The function returns list of mentors information
+    """
     user_db = get_user_by_telegram(telegram_id)
     user_id = None
     if user_db:
@@ -175,6 +181,9 @@ def search_mentors(search_query, telegram_id, mentor_role_id):
 
 
 def get_list_dict_mentors(search_result_str_list):
+    """
+    The function change format of metors from list to dict
+    """
     if not search_result_str_list:
         return search_result_str_list
     elif not search_result_str_list.strip():
@@ -186,12 +195,7 @@ def get_list_dict_mentors(search_result_str_list):
 
 def generate_time_list(start_time, end_time, interval_minutes):
     """
-    Генерация временных интервалов.
-
-    :param start_time: Время начала (строка в формате "HH:MM").
-    :param end_time: Время окончания (строка в формате "HH:MM").
-    :param interval_minutes: Длительность интервала в минутах.
-    :return: Список временных интервалов.
+    Timeslots generation
     """
     intervals = []
     current_time = datetime.strptime(start_time, "%H:%M")
@@ -208,6 +212,10 @@ def generate_time_list(start_time, end_time, interval_minutes):
 
 
 def get_available_slots(mentor_telegram_id, client_telegram_id=0):
+    """
+    The function return information about all_events, no_events - timeslots without events,
+    cancel_available_events - timeslots with cansel event.
+    """
     cancel_status_id = get_status_id("canceled")
     all_events = db_session.query(
         TimeSlots.start_date_utc.label("start_date"),
@@ -278,6 +286,9 @@ def get_available_slots(mentor_telegram_id, client_telegram_id=0):
 
 
 def get_my_calendar(telegram_id):
+    """
+    The function return information about all events for user who opens app
+    """
     events = list()
     all_events, no_events, cancel_available_events = get_available_slots(
                                                 telegram_id, telegram_id)
@@ -297,6 +308,9 @@ def get_my_calendar(telegram_id):
 
 
 def get_my_calendar_gmt(events, gmt, gmt_sign, filter, filter_date):
+    """
+    The function change time of events using gmt, gmt_sign
+    """
     events_gmt_filter = list()
     if not gmt:
         return events
@@ -323,7 +337,10 @@ def get_my_calendar_gmt(events, gmt, gmt_sign, filter, filter_date):
 
 
 def get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign):
-    all_events, no_events, cancel_available_events = get_available_slots(
+    """
+    The function is used for geting all avalible timeslots for future booking process  
+    """
+    _, no_events, cancel_available_events = get_available_slots(
                                                 telegram_id)
     timeslots_table = union(
                             no_events,
@@ -352,6 +369,9 @@ def get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign):
 
 
 def get_date_set(telegram_id, gmt="00:00", gmt_sign="+"):
+    """
+    The function return availibale for booking date using gmt and gmt_sign
+    """
     set_date = set()
     timeslots = get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign)
     if not timeslots:
@@ -365,6 +385,9 @@ def get_date_set(telegram_id, gmt="00:00", gmt_sign="+"):
 
 
 def get_time_set(telegram_id, gmt, gmt_sign, str_date):
+    """
+    The function return availibale for booking time for str_date using gmt and gmt_sign
+    """
     set_time = set()
     timeslots = get_mentor_timeslots_gmt(telegram_id, gmt, gmt_sign)
     if not timeslots:
@@ -383,6 +406,10 @@ def get_time_set(telegram_id, gmt, gmt_sign, str_date):
 
 
 def parcel_date_str(string):
+
+    """
+    The function parses str in necesarry date format
+    """
     uniq_date_list = list()
     list_str = string.split(", ")
     for i in range(len(list_str)):
@@ -396,6 +423,9 @@ def parcel_date_str(string):
 
 
 def parcel_time_str(string):
+    """
+    The function parses str in time format
+    """
     uniq_time_list = list()
     string = string.replace("{", "")
     string = string.replace("}", "")

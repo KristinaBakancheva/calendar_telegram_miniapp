@@ -1,16 +1,22 @@
 from datetime import datetime, timedelta
 from db import db_session
-from models import (UserSpecialization, User, UserRole, TimeSlots, Status,
-                    Events)
-from .get_data import (get_user_by_telegram, get_list_specialization_id,
-                       get_client_by_telegram, get_status_id)
+from webapp.calendar.models import Status, TimeSlots, Events
+from webapp.profile.models import UserSpecialization, User, UserRole
+from webapp.get_data import (get_user_by_telegram, get_list_specialization_id,
+                             get_client_by_telegram, get_status_id)
 from webapp import settings_conf
 
 
 def check_username_and_update(telegram_username, telegram_id):
+    """
+    The function updates telegram login in database
+    """
     user_db = get_user_by_telegram(telegram_id)
-    if user_db and user_db.telegram != "@"+telegram_username:
-        user_db.telegram = "@"+telegram_username
+    if user_db:
+        if telegram_username[0] != "@":
+            telegram_username = '@'+telegram_username
+        if telegram_username != user_db.telegram:
+            user_db.telegram = telegram_username
         db_session.commit()
 
 
@@ -52,7 +58,7 @@ def change_data(request_form):
 
 def create_user_special(user_id, user_specialization_id):
     """
-    The function creates new pair user_id and specialization_id
+    The function creates pair user_id and specialization_id
     for class UserSpecialization
     """
     user_special = UserSpecialization.query.filter(
@@ -64,6 +70,9 @@ def create_user_special(user_id, user_specialization_id):
 
 def check_outdated_specialization(user_id, new_specializations,
                                   db_specializations):
+    """
+    The function delite specialization if user deleted them from the form
+    """
     del_list = list()
     for user_specialization in db_specializations:
         if str(user_specialization) not in new_specializations:
@@ -74,6 +83,9 @@ def check_outdated_specialization(user_id, new_specializations,
 
 
 def check_new_specialization(user_id, new_specializations):
+    """
+    The function add specialization if user add them on the form
+    """
     add_list = list()
     for specialization_id in new_specializations:
         specialization_id = int(specialization_id)
@@ -86,6 +98,9 @@ def check_new_specialization(user_id, new_specializations):
 
 
 def save_profile(request_form):
+    """
+    The function create new user-mentor in database
+    """
     telegram_id = request_form.get("telegram_id")
     user_db = get_user_by_telegram(telegram_id)
     if user_db:
@@ -114,13 +129,13 @@ def save_profile(request_form):
     db_session.commit()
 
 
-def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
-    gmt = gmt.strftime("%H:%M")
+def save_timeslots(request_form, user_db):
+    """
+    The function create new timeslots in database
+    """
+    gmt = user_db.get("gmt").strftime("%H:%M")
     hours, minutes = map(int, gmt.split(":"))
     td = timedelta(hours=hours, minutes=minutes)
-    user_db = get_user_by_telegram(telegram_id)
-    if not user_db:
-        return None
     timeslots = request_form.getlist("time_slot")
     if not timeslots:
         return None
@@ -129,13 +144,13 @@ def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
         timeslot = timeslot_str.split(' - ')
         start_date_str = date + " " + timeslot[0]
         end_date_str = date + " " + timeslot[1]
-        if gmt_sign == "-":
+        if user_db.get("gmt_sign") == "-":
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M")+td
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d %H:%M")+td
         else:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d %H:%M")-td
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d %H:%M")-td
-        new_timeslots = TimeSlots(user_id=user_db.id,
+        new_timeslots = TimeSlots(user_id=user_db.get("id"),
                                   start_date_utc=start_date,
                                   end_date_utc=end_date)
         db_session.add(new_timeslots)
@@ -147,6 +162,10 @@ def save_timeslots(request_form, gmt, gmt_sign, telegram_id):
 
 def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
                     approve_cancel=False):
+    """
+    The function update status = request_mentor_status for event. 
+    If it's not possible, the function will return error
+    """
     request_mentor_status = Status.query.filter(Status.name.ilike(
         "%request%mentor%")).first()
     request_cancel_status_id = None
@@ -198,6 +217,10 @@ def cancel_db_event(cancel_event_id, free_cancel, telegram_id,
 
 
 def delete_db_timeslot(delete_timeslot_id):
+    """
+    The function delete timeslot if there aren't any events for this timeslot 
+    or change tag "active' = False if there are any events
+    """
     all_cancel_status = get_status_id("canceled")
     if not all_cancel_status:
         return False, "We don't have status 'canceled'"
@@ -217,6 +240,9 @@ def delete_db_timeslot(delete_timeslot_id):
 
 
 def approve_db_event(approve_event_id):
+    """
+    The function change event status from "request to mentor" to "booked"
+    """
     booked_status = Status.query.filter(Status.name == "booked").first()
     request_status = Status.query.filter(Status.name == "request to mentor"
                                          ).first()
@@ -233,6 +259,9 @@ def approve_db_event(approve_event_id):
 
 
 def create_event(telegram_id, telegram, request, list_timeslots_id):
+    """
+    The function creatennew event in status "request to mentor"
+    """
     client_id = get_client_by_telegram(telegram_id, telegram)
     status = Status.query.filter(Status.name == "request to mentor").first()
     if not status:
@@ -248,6 +277,9 @@ def create_event(telegram_id, telegram, request, list_timeslots_id):
 
 
 def action_with_event_timeslot(type_modal, telegram_id, event_id, timeslot_id):
+    """
+    The  function-router for actions with events or timeslots, which return result of action
+    """
     successful_approve = False
     error_approve = False
     successful_cancel = False
