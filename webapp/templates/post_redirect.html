@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <form id="post_form_book_time" action="{{ url_for('book_time') }}" method="POST">
+    <form id="post_form_book_time" action="{{ url_for('mentors.book_time') }}" method="POST">
         <input type="hidden" name="telegram" value="{{ telegram }}">
         <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
         <input type="hidden" name="gmt" value="{{ gmt }}">
@@ -15,7 +15,7 @@
         <input type="hidden" name="mistake_save" value="{{ mistake_save }}">
     </form>
 
-    <form id="post_form_mentors" action="{{ url_for('mentors') }}" method="POST">
+    <form id="post_form_mentors" action="{{ url_for('mentors.mentors') }}" method="POST">
         <input type="hidden" name="telegram" value="{{ telegram }}">
         <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
         <input type="hidden" name="search_result" value="{{ search_result }}">

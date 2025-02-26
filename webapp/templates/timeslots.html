@@ -52,6 +52,7 @@
         </style>
     </head>
     <body>
+        {% if successful_save or mistake_save%}
         <div id="liveToast" class="toast position-fixed top-50 start-50 translate-middle" role="alert" 
              aria-atomic="true" data-action="{{ successful_save }}{{ mistake_save }}">
             <div class="toast-header">
@@ -69,6 +70,7 @@
                 </div>
             {% endif %}
         </div> 
+        {% endif %}
 
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
             <ul class="nav nav-pills nav-fill ps-3">
@@ -82,7 +84,7 @@
         <div class="card-header">
             <u><h3>{{ page_title }}</h3></u>
         </div>
-        <form class="form-style" action="{{ url_for('update_time_slots') }}" method="POST">
+        <form class="form-style" action="{{ url_for('profile.actions') }}" method="POST">
             <div class="mb-3 form-style">
                 <label for="date_picker" class="form-label">Choose a date:</label>
                 <input type="date" class="form-control w-auto" id="date_picker" name="date">
@@ -99,7 +101,7 @@
                 {% endfor %}
                 <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
                 <input type="hidden" name="telegram" value="{{ telegram }}">
-                <button id="save_button" class="btn btn-primary" name="action" value="create">Save</button>
+                <button id="create_timeslot" class="btn btn-primary" name="create_timeslot" value="choose">Save</button>
             </div>
         </form>
         <script>

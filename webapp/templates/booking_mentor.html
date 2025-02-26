@@ -65,7 +65,7 @@
         <div class="card-header">
             <u><h4>{{ page_title }}</h4></u>
         </div>
-        <form class="form-style" action="{{ url_for('find_timslots') }}" method="GET">
+        <form class="form-style" action="{{ url_for('mentors.find_timslots') }}" method="GET">
             <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
             <input type="hidden" name="telegram" value="{{ telegram }}">
             <h5 class="ms-3">You chose a mentor - {{ mentor_data.telegram }}:</h5>

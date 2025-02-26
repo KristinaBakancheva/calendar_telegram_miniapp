@@ -65,9 +65,9 @@
             <u><h3 style="padding-bottom: 10px;">{{ page_title }}</h3></u>
         </div>
         
-        <form class="form-style" action="{{ url_for('edit_info') }}" method="POST">
-            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
+        <form class="form-style" action="{{ url_for('profile.actions') }}" method="POST">
             <input type="hidden" name="telegram" value="{{ telegram }}">
+            <input type="hidden" name="telegram_id" value="{{ telegram_id }}">
             <label for="name">Name:</label><br>
             <input id="name" name="name" {% if not editing %} readonly 
                     title="Press button edit for changing this field" {% endif %} value="{{ user_data.get('name') }}"></input>
@@ -75,12 +75,11 @@
             
             <div class="d-flex align-items-center" title="Press button edit for changing this field">
                 <select name="gmt_sign" class="form-select w-auto" {% if not editing %} disabled {% endif %}>
-                    <option selected>{{ user_data.get('gmt_sign') }}</option>
+                    <option value="{{ user_data.get('gmt_sign') }}" selected>{{ user_data.get('gmt_sign') }}</option>
                     {% if user_data.get('gmt_sign') == '+' %}
-                        <option value="+">+</option>
-                    {% endif %}
-                    {% if user_data.get('gmt_sign') != '+' %}
                         <option value="-">-</option>
+                    {% elif user_data.get('gmt_sign') != '+' %}
+                        <option value="+">+</option>
                     {% endif %}
                 </select>
                 <input type="time" id="gmt" name="gmt" 
@@ -89,7 +88,7 @@
                        class="form-control w-auto me-2" title="Press button edit for changing this field">
             </div>            
             <label for="telegram">Telegram:</label><br>
-            <input id="telegram" name="telegram" value="{{ user_data.get('telegram') }}" readonly 
+            <input id="telegram" value="{{ user_data.get('telegram') }}" disabled 
                    title="You can edit this field only on your telegram"></input><br>
             <label for="phone">Phone:</label><br>
             <input id="phone" name="phone" value="{{ user_data.get('phone') }}" {% if not editing %} readonly 
@@ -113,8 +112,9 @@
             <button type="submit" name="action" value="edit" class="btn btn-primary {% if editing %} d-none {% endif %}">Edit information</button> 
             <button type="submit" name="action" value="submit" class="btn btn-primary {% if not editing %} d-none {% endif %}">Submit</button>
             <button type="submit" name="action" value="cancel" class="btn btn-primary {% if not editing %} d-none {% endif %}">Cancel</button>
-            <a href="{{  url_for('create_time_slots', telegram=telegram, telegram_id=telegram_id) }}" 
-                class="btn btn-primary  {% if editing %} d-none {% endif %}" role="button">Create new time slots</a>
-        </form>
+            <button type="submit" name="action" value="create" class="btn btn-primary  {% if editing %} d-none {% endif %}">
+                Create new time slots
+            </button>
+            </form>
         </body>
 </html>
